@@ -62,3 +62,16 @@ CREATE TABLE IF NOT EXISTS MemberNameHistory(
     Timestamp TEXT NOT NULL,
     PRIMARY KEY (UserID, Timestamp)
 );
+
+-- many-to-one: Many user reminders correspond to one reminder job via JobID
+CREATE TABLE IF NOT EXISTS RemindmeJobs(
+    JobID TEXT PRIMARY KEY,
+    Timestamp Text NOT NULL,
+    Message Text
+)
+
+CREATE TABLE IF NOT EXISTS RemindmeUserReminders(
+    ID INTEGER PRIMARY KEY,
+    JobID TEXT NOT NULL,
+    UserID TEXT NOT NULL
+);
