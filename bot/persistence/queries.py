@@ -79,3 +79,24 @@ DEACTIVATE_BOTONLY_FOR_CHANNEL = "DELETE FROM BotOnlyChannel WHERE ChannelID = ?
 # Moderation
 INSERT_MEMBER_NAME = "INSERT INTO MemberNameHistory (UserID, Name, Timestamp) VALUES (?, ?, ?)"
 GET_MEMBER_NAMES = "SELECT Name, Timestamp FROM MemberNameHistory WHERE UserID = ? ORDER BY ROWID DESC"
+
+
+# Remindme
+INSERT_REMINDER_JOB = "INSERT INTO RemindmeJobs (JobID, Timestamp, Message) VALUES (?, ?, ?)"
+REMOVE_REMINDER_JOB = "DELETE FROM RemindmeJobs WHERE JobID = ?"
+GET_REMINDER_JOBS = "SELECT JobID, Timestamp, Message FROM RemindmeJobs"
+
+# Needs to be formatted to allow a variable numbers of arguments
+GET_REMINDER_JOBS_CONDITIONAL = "SELECT JobID, Timestamp, Message FROM RemindmeJobs " \
+                                "WHERE JobID IN ({0})"
+
+INSERT_REMINDER_FOR_USER = "INSERT INTO RemindmeUserReminders (JobID, UserID) VALUES (?, ?)"
+REMOVE_REMINDER_FOR_USER = "DELETE FROM RemindmeUserReminders WHERE JobID = ? AND UserID = ?"
+GET_REMINDERS_FOR_USER = "SELECT JobID, UserID FROM RemindmeUserReminders WHERE UserID = ?"
+
+GET_REMINDER_JOBS_FOR_USER = "SELECT job.JobId, job.Timestamp, job.Message " \
+                             "FROM RemindmeJobs job " \
+                             "INNER JOIN RemindmeUserReminders user_reminder " \
+                             "ON job.JobID = user_reminder.JobID " \
+                             "WHERE user_reminder.UserID = ? " \
+                             "ORDER BY job.Timestamp ASC"
