@@ -67,8 +67,8 @@ CREATE TABLE IF NOT EXISTS MemberNameHistory(
 CREATE TABLE IF NOT EXISTS RemindmeJobs(
     JobID TEXT PRIMARY KEY,
     Timestamp Text NOT NULL,
-    Message Text
-)
+    Message Text NOT NULL
+);
 
 CREATE TABLE IF NOT EXISTS RemindmeUserReminders(
     ID INTEGER PRIMARY KEY,
