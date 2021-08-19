@@ -3,7 +3,7 @@
 import datetime
 import uuid
 from sqlite3 import Error
-from typing import List, Optional, Iterator, Iterable
+from typing import List, Optional, Iterator, Iterable, Generator
 
 from bot.moderation import ModmailStatus
 from bot.feedback import SuggestionStatus
@@ -178,7 +178,7 @@ class DatabaseConnector:
 
     def get_reminder_jobs(
         self, job_ids: Optional[Iterable[uuid.UUID]] = None
-    ) -> Optional[list[tuple]]:
+    ) -> Generator[tuple]:
         """
         Fetches the specified jobs from the table `RemindmeJobs`. If no jobs
         are specified, fetches all jobs.
@@ -188,8 +188,8 @@ class DatabaseConnector:
                 An optional list of reminder job UUIDs.
 
         Returns:
-            Optional[list[tuple]]: A list of tuples that contain the reminders'
-                job UUID, timestamps, and message.
+            Generator[tuple]: A generator that yields tuples, each containing a
+                reminder's job UUID, timestamp, and message.
         """
         with DatabaseManager(self._db_file) as db_manager:
             if job_ids is not None:
@@ -201,8 +201,7 @@ class DatabaseConnector:
                 )
             else:
                 result = db_manager.execute(queries.GET_REMINDER_JOBS)
-            rows = result.fetchall()
-            return rows if rows else None
+            return (row for row in result)
 
     def add_reminder_for_user(self, job_id: uuid.UUID, user_id: int):
         """
@@ -231,7 +230,7 @@ class DatabaseConnector:
             db_manager.execute(queries.REMOVE_REMINDER_FOR_USER, (str(job_id), user_id))
             db_manager.commit()
 
-    def get_reminder_jobs_for_user(self, user_id: int) -> Optional[list[tuple]]:
+    def get_reminder_jobs_for_user(self, user_id: int) -> Generator[tuple]:
         """
         Fetches all reminder jobs from table `RemindmeJobs` that are associated
         with a user.
@@ -240,13 +239,25 @@ class DatabaseConnector:
             user_id (int): The user ID to fetch the reminder jobs for.
 
         Returns:
-            Optional[list[tuple]]: A list of reminder jobs that correspond to
-                the given user ID.
+            Generator[tuple]: A generator that yields reminder jobs that
+                correspond to the given user ID.
         """
         with DatabaseManager(self._db_file) as db_manager:
-            result = db_manager.execute(queries.GET_REMINDER_JOBS_FOR_USER, (user_id,))
-            rows = result.fetchall()
-            return rows if rows else None
+            return (row[0] for row in db_manager.execute(queries.GET_REMINDER_JOBS_FOR_USER, (user_id,)))
+
+    def get_users_for_reminder_job(self, job_id: uuid.UUID) -> Generator[int]:
+        """
+        Fetches all user IDs from table `RemindmeUserReminders` that are associated
+        with a reminder job.
+
+        Args:
+            job_id (uuid.UUID): The reminder job's UUID to fetch the user IDs for.
+
+        Returns:
+            Generator[int]: A generator that yields user IDs.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            return (row[0] for row in db_manager.execute(queries.GET_USERS_FOR_REMINDER_JOB, (job_id, )))
 
     def add_module_role(self, role_id: int):
         """Adds a role to the table "ModuleRole".
