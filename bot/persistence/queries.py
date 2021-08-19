@@ -92,7 +92,6 @@ GET_REMINDER_JOBS_CONDITIONAL = "SELECT JobID, Timestamp, Message FROM RemindmeJ
 
 INSERT_REMINDER_FOR_USER = "INSERT INTO RemindmeUserReminders (JobID, UserID) VALUES (?, ?)"
 REMOVE_REMINDER_FOR_USER = "DELETE FROM RemindmeUserReminders WHERE JobID = ? AND UserID = ?"
-GET_REMINDERS_FOR_USER = "SELECT JobID, UserID FROM RemindmeUserReminders WHERE UserID = ?"
 
 GET_REMINDER_JOBS_FOR_USER = "SELECT job.JobId, job.Timestamp, job.Message " \
                              "FROM RemindmeJobs job " \
