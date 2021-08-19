@@ -1,6 +1,7 @@
 """Contains logic for connecting to and manipulating the database."""
 
 import datetime
+import uuid
 from sqlite3 import Error
 from typing import List, Optional, Iterator, Iterable
 
@@ -134,6 +135,118 @@ class DatabaseConnector:
             if rows:
                 return rows
             return None
+
+    def add_reminder_job(
+        self,
+        job_id: uuid.UUID,
+        timestamp: datetime.datetime,
+        message: str,
+    ):
+        """
+        Adds a new reminder job to the table `RemindmeJobs`.
+
+        Whenever a record is added, a corresponding job should be added to the
+        scheduler.
+
+        Args:
+            job_id (uuid.UUID): The UUID of the job. This is the same UUID that
+                must be set as the scheduler's job ID.
+            timestamp (datetime.datetime): The date and time at which the reminder
+                should be issued.
+            message (str): The reminder's message.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(
+                queries.INSERT_REMINDER_JOB, (str(job_id), str(timestamp), message)
+            )
+            db_manager.commit()
+
+    def remove_reminder_job(self, job_id: uuid.UUID):
+        """
+        Removes a reminder job from the table `RemindmeJobs`.
+
+        Whenever a record is deleted, the scheduler's corresponding job should
+        also be removed.
+
+        Args:
+            job_id (uuid.UUID): The UUID of the job to remove. This is the same
+                UUID that must have been set as the scheduler's job ID.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.REMOVE_REMINDER_JOB, (str(job_id),))
+            db_manager.commit()
+
+    def get_reminder_jobs(
+        self, job_ids: Optional[Iterable[uuid.UUID]] = None
+    ) -> Optional[list[tuple]]:
+        """
+        Fetches the specified jobs from the table `RemindmeJobs`. If no jobs
+        are specified, fetches all jobs.
+
+        Args:
+            job_ids (Optional[Iterable[uuid.UUID]]):
+                An optional list of reminder job UUIDs.
+
+        Returns:
+            Optional[list[tuple]]: A list of tuples that contain the reminders'
+                job UUID, timestamps, and message.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            if job_ids is not None:
+                result = db_manager.execute(
+                    queries.GET_REMINDER_JOBS_CONDITIONAL.format(
+                        ", ".join("?" for _ in job_ids)
+                    ),
+                    tuple(str(job_id) for job_id in job_ids),
+                )
+            else:
+                result = db_manager.execute(queries.GET_REMINDER_JOBS)
+            rows = result.fetchall()
+            return rows if rows else None
+
+    def add_reminder_for_user(self, job_id: uuid.UUID, user_id: int):
+        """
+        Adds a reminder for a user to the table `RemindmeUserReminders`.
+
+        One must ensure that the reminder job already exists in the `RemindmeJobs`
+        table.
+
+        Args:
+            job_id (uuid.UUID): The UUID of the job.
+            user_id (int): The user's ID to associate with the given job.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.INSERT_REMINDER_FOR_USER, (str(job_id), user_id))
+            db_manager.commit()
+
+    def remove_reminder_for_user(self, job_id: uuid.UUID, user_id: int):
+        """
+        Removes a reminder for a user from the table `RemindmeUserReminders`.
+
+        Args:
+            job_id (uuid.UUID): The UUID of the job.
+            user_id (int): The user's ID to associate with the given job.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.execute(queries.REMOVE_REMINDER_FOR_USER, (str(job_id), user_id))
+            db_manager.commit()
+
+    def get_reminder_jobs_for_user(self, user_id: int) -> Optional[list[tuple]]:
+        """
+        Fetches all reminder jobs from table `RemindmeJobs` that are associated
+        with a user.
+
+        Args:
+            user_id (int): The user ID to fetch the reminder jobs for.
+
+        Returns:
+            Optional[list[tuple]]: A list of reminder jobs that correspond to
+                the given user ID.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(queries.GET_REMINDER_JOBS_FOR_USER, (user_id,))
+            rows = result.fetchall()
+            return rows if rows else None
 
     def add_module_role(self, role_id: int):
         """Adds a role to the table "ModuleRole".
