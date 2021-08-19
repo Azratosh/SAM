@@ -99,3 +99,5 @@ GET_REMINDER_JOBS_FOR_USER = "SELECT job.JobId, job.Timestamp, job.Message " \
                              "ON job.JobID = user_reminder.JobID " \
                              "WHERE user_reminder.UserID = ? " \
                              "ORDER BY job.Timestamp ASC"
+
+GET_USERS_FOR_REMINDER_JOB = "Select UserID FROM RemindmeUserReminders WHERE JobID = ?"
