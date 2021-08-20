@@ -15,7 +15,8 @@ INITIAL_EXTNS = {"AdminCog":            'bot.admin.admin',
                  "UniversityCog":       'bot.university.university',
                  "UtilityCog":          'bot.utility.utility',
                  "FeedbackCog":         'bot.feedback.feedback',
-                 "MusicCog":            'bot.music.music'}
+                 "MusicCog":            'bot.music.music',
+                 "RemindmeCog":         'bot.remindme.remindme'}
 
 
 # Job Times
