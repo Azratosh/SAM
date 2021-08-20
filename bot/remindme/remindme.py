@@ -45,6 +45,15 @@ class RemindMeCog(commands.Cog):
         RemindMeCog.bot = self.bot
         RemindMeCog.db_connector = self._db_connector
 
+        singletons.SCHEDULER.add_job(
+            _scheduled_reminder_vacuum,
+            replace_existing=True,
+            id="reminder_vacuum",
+            trigger="cron",
+            day_of_week="mon",
+            hour="3",
+        )
+
     @commands.group(name="remindme", invoke_without_command=True)
     @command_log
     async def remindme(
@@ -222,6 +231,35 @@ async def _scheduled_reminder(
     RemindMeCog.db_connector.remove_reminder_job(reminder_id)
 
     log.info("[REMINDME] %s messaged, %s skipped.", messaged_count, skipped_count)
+
+
+async def _scheduled_reminder_vacuum():
+    """
+    Vacuums the *RemindmeJobs* and *RemindmeUserReminders* tables as well as
+    the scheduler's stored data, ensuring that there are no dangling records
+    floating around.
+    """
+    log.info("[REMINDME] Starting vacuum job.")
+    user_reminders = RemindMeCog.db_connector.get_reminders_for_users()
+    for reminder_id, user_id in user_reminders:
+        if not any(RemindMeCog.db_connector.get_reminder_jobs([reminder_id])):
+            log.info(
+                "[REMINDME] Vacuuming dangling reminder [%s] for user with ID [%s]",
+                reminder_id,
+                user_id,
+            )
+            RemindMeCog.db_connector.remove_reminder_for_user(reminder_id, user_id)
+
+    reminder_jobs = RemindMeCog.db_connector.get_reminder_jobs()
+    for reminder_id, reminder_dt, reminder_msg in reminder_jobs:
+        if not singletons.SCHEDULER.get_job(str(reminder_id), "default"):
+            log.info(
+                "[REMINDME] Vacuuming dangling reminder job [%s] without scheduled job",
+                reminder_id,
+            )
+            RemindMeCog.db_connector.remove_reminder_job(reminder_id)
+
+    log.info("[REMINDME] Finished vacuum job.")
 
 
 def setup(bot):
