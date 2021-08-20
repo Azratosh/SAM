@@ -84,24 +84,14 @@ class RemindMeCog(commands.Cog):
                 "damit ich sie dir auch zustellen kann."
             )
 
-        reminder_uuid = uuid.uuid4()
-
-        self._db_connector.add_reminder_job(reminder_uuid, reminder_dt, reminder_msg)
-        self._db_connector.add_reminder_for_user(reminder_uuid, ctx.author.id)
-
-        singletons.SCHEDULER.add_job(
-            _scheduled_reminder,
-            trigger="date",
-            run_date=reminder_dt,
-            args=[reminder_uuid, reminder_dt, reminder_msg],
-            id=str(reminder_uuid),
-            replace_existing=True,
+        sent_message = await ctx.send(
+            "Deine Erinnerung wurde erfolgreich hinzugefügt :calendar_spiral:"
         )
 
-        await ctx.send(
-            "Deine Erinnerung wurde erfolgreich hinzugefügt :calendar_spiral:\n"
-            f"```diff\n+ {reminder_uuid = }\n+ {reminder_dt = }\n+ {reminder_msg = }```"
-        )
+        if ctx.channel is not discord.DMChannel:
+            reminder_msg += f"\n\n[Originale Nachricht]({sent_message.jump_url})"
+
+        await self.schedule_reminder(ctx, reminder_dt, reminder_msg)
 
     @remindme.command(name="help")  # use class HelpCommand (?)
     @command_log
@@ -150,6 +140,72 @@ class RemindMeCog(commands.Cog):
 
         return result
 
+    async def schedule_reminder(
+        self,
+        ctx: commands.Context,
+        reminder_dt: datetime.datetime,
+        reminder_msg: str,
+    ):
+        """
+        Launches a new thread that schedules the reminder in the background,
+        running an otherwise blocking call as a coroutine.
+
+        Args:
+            ctx (commands.Context): The invocation context of the command
+                this method was used in.
+            reminder_dt (datetime.datetime): The date and time at which the
+                reminder should be sent.
+            reminder_msg (str): The reminder's message.
+        """
+        loop = asyncio.get_running_loop()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
+            await loop.run_in_executor(
+                executor=executor,
+                func=functools.partial(
+                    self._schedule_reminder, ctx, reminder_dt, reminder_msg
+                ),
+            )
+
+    def _schedule_reminder(
+        self,
+        ctx: commands.Context,
+        reminder_dt: datetime.datetime,
+        reminder_msg: str,
+    ):
+        """
+        The blocking function that is used in :func:`schedule_reminder`.
+
+        This function was separately added in order to ensure that every
+        call happens sequentially instead of running every method individually
+        in the *ThreadPoolExecutor*.
+
+        Args:
+            ctx (commands.Context): The invocation context of the command
+                this method was used in.
+            reminder_dt (datetime.datetime): The date and time at which the
+                reminder should be sent.
+            reminder_msg (str): The reminder's message.
+        """
+        reminder_uuid = uuid.uuid4()
+
+        self._db_connector.add_reminder_job(reminder_uuid, reminder_dt, reminder_msg)
+        self._db_connector.add_reminder_for_user(reminder_uuid, ctx.author.id)
+
+        reminder_embed = discord.Embed(
+            title="Erinnerung :calendar_spiral:",
+            description=reminder_msg,
+            color=constants.EMBED_COLOR_INFO,
+        )
+
+        singletons.SCHEDULER.add_job(
+            _scheduled_reminder,
+            trigger="date",
+            run_date=reminder_dt,
+            args=[reminder_uuid, reminder_embed],
+            id=str(reminder_uuid),
+            replace_existing=True,
+        )
+
     @remindme.error
     async def remindme_error(self, ctx: commands.Context, error):
         """
@@ -177,14 +233,18 @@ class RemindMeCog(commands.Cog):
         pass
 
 
-async def _scheduled_reminder(
-    reminder_id: uuid.UUID, reminder_dt: datetime.datetime, reminder_msg: str
-):
+async def _scheduled_reminder(reminder_id: uuid.UUID, embed: discord.Embed):
+    """
+    Schedules a reminder message to be sent to its users.
+
+    Args:
+        reminder_id (uuid.UUID): The reminder's UUID.
+        reminder_dt (datetime.datetime): The timestamp of the reminder.
+        reminder_msg (str): The reminder's message.
+    """
     log.info(
-        f'[REMINDME] Sending reminder: [%s] (%s): "%s"',
-        str(reminder_id),
-        str(reminder_dt),
-        reminder_msg,
+        f"[REMINDME] Sending reminder [%s]",
+        reminder_id,
     )
 
     if not any(RemindMeCog.db_connector.get_reminder_jobs([reminder_id])):
@@ -199,23 +259,17 @@ async def _scheduled_reminder(
     skipped_count = 0
 
     for user_id in RemindMeCog.db_connector.get_users_for_reminder_job(reminder_id):
-        user: discord.User = guild.get_member(user_id) or RemindMeCog.bot.get_user(user_id)
+        user: discord.User = guild.get_member(user_id)
         if user:
             try:
-                await user.send(
-                    embed=discord.Embed(
-                        title="Erinnerung :calendar_spiral:",
-                        description=reminder_msg,
-                        color=constants.EMBED_COLOR_INFO,
-                    )
-                )
+                await user.send(embed=embed)
             except Exception as e:
                 skipped_count += 1
                 log.exception(
                     "[REMINDME] Encountered an unexpected exception when sending reminder "
-                    "to user with ID [%s], name [%s]:",
-                    user_id,
+                    "to user [%s] [%s]:",
                     user.name,
+                    user.id,
                     exc_info=e,
                 )
             else:
