@@ -5,6 +5,7 @@ import uuid
 from sqlite3 import Error
 from typing import List, Optional, Iterator, Iterable, Generator
 
+from bot import constants
 from bot.moderation import ModmailStatus
 from bot.feedback import SuggestionStatus
 from bot.persistence import queries
@@ -201,7 +202,14 @@ class DatabaseConnector:
                 )
             else:
                 result = db_manager.execute(queries.GET_REMINDER_JOBS)
-            return (row for row in result)
+            return (
+                (
+                    uuid.UUID(row[0]),
+                    datetime.datetime.strptime(row[1], constants.REMINDER_DT_FORMAT),
+                    row[2],
+                )
+                for row in result.fetchall()
+            )
 
     def add_reminder_for_user(self, job_id: uuid.UUID, user_id: int):
         """
@@ -246,10 +254,10 @@ class DatabaseConnector:
         """
         with DatabaseManager(self._db_file) as db_manager:
             return (
-                row[0]
+                uuid.UUID(row[0])
                 for row in db_manager.execute(
                     queries.GET_REMINDER_JOBS_FOR_USER, (user_id,)
-                )
+                ).fetchall()
             )
 
     def get_users_for_reminder_job(
@@ -266,7 +274,12 @@ class DatabaseConnector:
             Generator[int, None. None]: A generator that yields user IDs.
         """
         with DatabaseManager(self._db_file) as db_manager:
-            return (row[0] for row in db_manager.execute(queries.GET_USERS_FOR_REMINDER_JOB, (job_id, )))
+            return (
+                int(row[0])
+                for row in db_manager.execute(
+                    queries.GET_USERS_FOR_REMINDER_JOB, (str(job_id),)
+                ).fetchall()
+            )
 
     def add_module_role(self, role_id: int):
         """Adds a role to the table "ModuleRole".
