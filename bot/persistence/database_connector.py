@@ -144,7 +144,7 @@ class DatabaseConnector:
         message: str,
     ):
         """
-        Adds a new reminder job to the table `RemindmeJobs`.
+        Adds a new reminder job to the table *RemindmeJobs*.
 
         Whenever a record is added, a corresponding job should be added to the
         scheduler.
@@ -164,7 +164,7 @@ class DatabaseConnector:
 
     def remove_reminder_job(self, job_id: uuid.UUID):
         """
-        Removes a reminder job from the table `RemindmeJobs`.
+        Removes a reminder job from the table *RemindmeJobs*.
 
         Whenever a record is deleted, the scheduler's corresponding job should
         also be removed.
@@ -181,7 +181,7 @@ class DatabaseConnector:
         self, job_ids: Optional[Iterable[uuid.UUID]] = None
     ) -> Generator[tuple, None, None]:
         """
-        Fetches the specified jobs from the table `RemindmeJobs`. If no jobs
+        Fetches the specified jobs from the table *RemindmeJobs*. If no jobs
         are specified, fetches all jobs.
 
         Args:
@@ -213,7 +213,7 @@ class DatabaseConnector:
 
     def add_reminder_for_user(self, job_id: uuid.UUID, user_id: int):
         """
-        Adds a reminder for a user to the table `RemindmeUserReminders`.
+        Adds a reminder for a user to the table *RemindmeUserReminders*.
 
         One must ensure that the reminder job already exists in the `RemindmeJobs`
         table.
@@ -228,7 +228,7 @@ class DatabaseConnector:
 
     def remove_reminder_for_user(self, job_id: uuid.UUID, user_id: int):
         """
-        Removes a reminder for a user from the table `RemindmeUserReminders`.
+        Removes a reminder for a user from the table *RemindmeUserReminders*.
 
         Args:
             job_id (uuid.UUID): The UUID of the job.
@@ -242,7 +242,7 @@ class DatabaseConnector:
         self, job_user_tuples: list[tuple[uuid.UUID, int]]
     ):
         """
-        Removes many reminders for many users from the table `RemindmeUserReminders`.
+        Removes many reminders for many users from the table *RemindmeUserReminders*.
 
         Args:
             job_user_tuples (list[tuple[uuid.UUID, int]]):
@@ -260,7 +260,7 @@ class DatabaseConnector:
         self, user_id: int
     ) -> Generator[uuid.UUID, None, None]:
         """
-        Fetches all reminder jobs from table `RemindmeJobs` that are associated
+        Fetches all reminder jobs from table *RemindmeJobs* that are associated
         with a user.
 
         Args:
@@ -282,7 +282,7 @@ class DatabaseConnector:
         self, job_id: uuid.UUID
     ) -> Generator[int, None, None]:
         """
-        Fetches all user IDs from table `RemindmeUserReminders` that are associated
+        Fetches all user IDs from table *RemindmeUserReminders* that are associated
         with a reminder job.
 
         Args:
