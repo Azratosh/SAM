@@ -86,12 +86,17 @@ INSERT_REMINDER_JOB = "INSERT INTO RemindmeJobs (JobID, Timestamp, Message) VALU
 REMOVE_REMINDER_JOB = "DELETE FROM RemindmeJobs WHERE JobID = ?"
 GET_REMINDER_JOBS = "SELECT JobID, Timestamp, Message FROM RemindmeJobs"
 
-# Needs to be formatted to allow a variable numbers of arguments
+# Needs to be formatted for varargs
 GET_REMINDER_JOBS_CONDITIONAL = "SELECT JobID, Timestamp, Message FROM RemindmeJobs " \
                                 "WHERE JobID IN ({0})"
 
 INSERT_REMINDER_FOR_USER = "INSERT INTO RemindmeUserReminders (JobID, UserID) VALUES (?, ?)"
 REMOVE_REMINDER_FOR_USER = "DELETE FROM RemindmeUserReminders WHERE JobID = ? AND UserID = ?"
+GET_REMINDERS_FOR_USER = "SELECT JobID, UserID FROM RemindmeUserReminders"
+
+# Needs to be formatted for varargs
+GET_REMINDERS_FOR_USER_CONDITIONAL = "SELECT JobID, UserID FROM RemindmeUserReminders " \
+                                     "WHERE UserID IN ({0})"
 
 GET_REMINDER_JOBS_FOR_USER = "SELECT job.JobId, job.Timestamp, job.Message " \
                              "FROM RemindmeJobs job " \
