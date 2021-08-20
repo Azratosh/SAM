@@ -6,6 +6,8 @@ import re
 
 from dateutil import relativedelta
 
+from bot.constants import REMINDER_DT_FORMAT
+
 # Note regarding constants in general:
 # All of the following constants are to be used exclusively by the parser
 # and have been written in such a way.
@@ -98,8 +100,6 @@ PATTERNS_TIME = [
 """
 The compiled version of :py:const:`REGEXES_TIME`.
 """
-
-REMINDER_DT_FINAL_FORMAT = "%Y-%m-%d %H:%M"
 
 
 class ReminderParseError(ValueError):
@@ -208,7 +208,7 @@ def parse(
 
     # 6: Sanitize resulting datetime, truncating seconds and microseconds
     parsed_datetime = datetime.datetime.strptime(
-        parsed_datetime.strftime(REMINDER_DT_FINAL_FORMAT), REMINDER_DT_FINAL_FORMAT
+        parsed_datetime.strftime(REMINDER_DT_FORMAT), REMINDER_DT_FORMAT
     )
 
     reminder_message = quoted_text or remaining_message

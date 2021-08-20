@@ -159,5 +159,8 @@ ROLE_ID_MODERATOR = os.getenv("ROLE_ID_MODERATOR") or "Undefined"
 ROLE_ID_MUTED = os.getenv("ROLE_ID_MUTED") or "Undefined"
 ROLE_ID_ERSTI = os.getenv("ROLE_ID_ERSTI") or "Undefined"
 
+## Remindme
+REMINDER_DT_FORMAT = "%Y-%m-%d %H:%M:%S"
+
 ## User IDs
 USER_ID_CONTRIBUTOR = 310100064687226882
