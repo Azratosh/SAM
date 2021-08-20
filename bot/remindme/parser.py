@@ -172,16 +172,27 @@ def parse(
             time_spec, parse_method=parse_method, ref_dt=ref_dt
         )
 
-    # 4: Try parsing for a series of durations if no timestamp was found
-    if parsed_datetime is None and not is_tomorrow:
-        parsed_datetime, remaining_message = parse_duration(
-            time_spec, bool(quoted_text), ref_dt=ref_dt
-        )
-
+    # 4: Set reminder for tomorrow or try parsing for durations
     if parsed_datetime is None:
-        raise ReminderParseError(
-            "Erinnerung ist nicht lesbar. Bitte überprüfe deine Eingabe."
-        )
+        # 4.a: Set reminder for tomorrow morning if "!remindme tomorrow msg"
+        #      Also: time_spec = the reminder's message if it couldn't be parsed
+        #      until now
+        if is_tomorrow:
+            date_ = (ref_dt + relativedelta.relativedelta(days=1)).date()
+            time_ = datetime.time(9)
+            parsed_datetime = datetime.datetime.combine(date_, time_)
+            remaining_message = time_spec
+
+        # 4.b: Try parsing for a series of durations if no timestamp was found
+        else:
+            parsed_datetime, remaining_message = parse_duration(
+                time_spec, bool(quoted_text), ref_dt=ref_dt
+            )
+
+            if parsed_datetime is None:
+                raise ReminderParseError(
+                    "Erinnerung ist nicht lesbar. Bitte überprüfe deine Eingabe."
+                )
 
     if quoted_text and remaining_message:
         raise ReminderParseError(f"Unlesbares Argument gefunden: {remaining_message}")
