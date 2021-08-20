@@ -238,6 +238,24 @@ class DatabaseConnector:
             db_manager.execute(queries.REMOVE_REMINDER_FOR_USER, (str(job_id), user_id))
             db_manager.commit()
 
+    def remove_many_reminder_for_user(
+        self, job_user_tuples: list[tuple[uuid.UUID, int]]
+    ):
+        """
+        Removes many reminders for many users from the table `RemindmeUserReminders`.
+
+        Args:
+            job_user_tuples (list[tuple[uuid.UUID, int]]):
+                A list of tuples, each containing a reminder job's UUID and the
+                user's ID.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.executemany(
+                queries.REMOVE_REMINDER_FOR_USER,
+                ((str(job_id), int(user_id)) for job_id, user_id in job_user_tuples),
+            )
+            db_manager.commit()
+
     def get_reminder_jobs_for_user(
         self, user_id: int
     ) -> Generator[uuid.UUID, None, None]:
