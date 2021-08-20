@@ -238,6 +238,33 @@ class DatabaseConnector:
             db_manager.execute(queries.REMOVE_REMINDER_FOR_USER, (str(job_id), user_id))
             db_manager.commit()
 
+    def get_reminders_for_users(
+        self, user_ids: Optional[list[int]] = None
+    ) -> Generator[tuple, None, None]:
+        """
+        Fetches all reminders set for the given user IDs from the table
+        *RemindmeUserReminders*.
+
+        Args:
+            user_ids (Optional[list[int]]): The user IDs to query for.
+
+        Returns:
+            Generator[tuple, None, None]: A generator that yields tuples, each
+                containing a reminder job ID and user ID.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            if user_ids:
+                result = db_manager.execute(
+                    queries.GET_REMINDERS_FOR_USER_CONDITIONAL.format(
+                        ", ".join("?" for _ in user_ids)
+                    ),
+                    tuple(user_id for user_id in user_ids),
+                )
+            else:
+                result = db_manager.execute(queries.GET_REMINDERS_FOR_USER)
+
+            return ((uuid.UUID(row[0]), int(row[1])) for row in result.fetchall())
+
     def remove_many_reminder_for_user(
         self, job_user_tuples: list[tuple[uuid.UUID, int]]
     ):
