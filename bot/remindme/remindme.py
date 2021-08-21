@@ -12,24 +12,14 @@ from bot import constants, singletons
 from bot.logger import command_log, log
 from bot.persistence import DatabaseConnector
 from bot.remindme import parser
+import bot.remindme.constants as rm_const
 
 
 class RemindMeCog(commands.Cog):
     def __init__(self, bot):
         """Initializes the Cog.
 
-        .. todo::
-            * Pretty Embeds
-            * List navigation
-                - going from list to single view
-                - being able to delete reminders in single view
-                - going from single view back to list
-                - navigating from view to view
-                - timeout after one minute of not using navigation
-                - using some kind of cache so as to not spam the DB when
-                    browsing the list
-            * Support for reacting on users' reminders, adding them to your own
-            * Link to original message in reminder
+        Todo:
             * Link reminder specification in !remindme help message
 
         Args:
@@ -84,14 +74,25 @@ class RemindMeCog(commands.Cog):
                 "damit ich sie dir auch zustellen kann."
             )
 
-        sent_message = await ctx.send(
-            "Deine Erinnerung wurde erfolgreich hinzugefügt :calendar_spiral:"
+        embed = discord.Embed(
+            title=f"Erinnerung {rm_const.REMINDER_EMOJI}",
+            description=reminder_msg,
+            colour=constants.EMBED_COLOR_INFO,
+        ).add_field(
+            name="Wann:", value=f"{reminder_dt.strftime(rm_const.REMINDER_DT_MESSAGE_FORMAT)}"
+        ).add_field(
+            name="Erstellt von:", value=f"{ctx.author.mention}"
+        ).set_footer(
+            text=f"Klicke auf {rm_const.REMINDER_EMOJI} um diese Erinnerung ebenfalls zu erhalten.",
         )
+
+        sent_message = await ctx.send(embed=embed)
 
         if ctx.channel is not discord.DMChannel:
             reminder_msg += f"\n\n[Originale Nachricht]({sent_message.jump_url})"
 
-        await self.schedule_reminder(ctx, reminder_dt, reminder_msg)
+        await self.schedule_reminder(ctx, reminder_dt, reminder_msg, sent_message.id)
+        await sent_message.add_reaction(rm_const.REMINDER_EMOJI)
 
     @remindme.command(name="help")  # use class HelpCommand (?)
     @command_log
@@ -145,6 +146,7 @@ class RemindMeCog(commands.Cog):
         ctx: commands.Context,
         reminder_dt: datetime.datetime,
         reminder_msg: str,
+        bot_msg_id: int,
     ):
         """
         Launches a new thread that schedules the reminder in the background,
@@ -162,7 +164,7 @@ class RemindMeCog(commands.Cog):
             await loop.run_in_executor(
                 executor=executor,
                 func=functools.partial(
-                    self._schedule_reminder, ctx, reminder_dt, reminder_msg
+                    self._schedule_reminder, ctx, reminder_dt, reminder_msg, bot_msg_id
                 ),
             )
 
@@ -171,6 +173,7 @@ class RemindMeCog(commands.Cog):
         ctx: commands.Context,
         reminder_dt: datetime.datetime,
         reminder_msg: str,
+        bot_msg_id: int,
     ):
         """
         The blocking function that is used in :func:`schedule_reminder`.
@@ -185,16 +188,21 @@ class RemindMeCog(commands.Cog):
             reminder_dt (datetime.datetime): The date and time at which the
                 reminder should be sent.
             reminder_msg (str): The reminder's message.
+            bot_msg_id (int): The ID of the *discord.Message* the bot had posted.
         """
         reminder_uuid = uuid.uuid4()
 
-        self._db_connector.add_reminder_job(reminder_uuid, reminder_dt, reminder_msg)
+        self._db_connector.add_reminder_job(
+            reminder_uuid, reminder_dt, reminder_msg, bot_msg_id
+        )
         self._db_connector.add_reminder_for_user(reminder_uuid, ctx.author.id)
 
         reminder_embed = discord.Embed(
             title="Erinnerung :calendar_spiral:",
             description=reminder_msg,
             color=constants.EMBED_COLOR_INFO,
+        ).set_footer(
+            text=f"Erstellt von {ctx.author.name}#{ctx.author.discriminator}"
         )
 
         singletons.SCHEDULER.add_job(
@@ -225,12 +233,20 @@ class RemindMeCog(commands.Cog):
                 )
 
     @commands.Cog.listener(name="on_raw_reaction_add")
-    async def reminder_on_reaction_add(self):
-        pass
-
-    @commands.Cog.listener(name="on_raw_reaction_remove")
-    async def reminder_on_reaction_remove(self):
-        pass
+    async def reminder_on_reaction_add(self, payload: discord.RawReactionActionEvent):
+        if (
+            payload.emoji.name == rm_const.REMINDER_EMOJI
+            and payload.user_id != self.bot.user.id
+        ):
+            job = self._db_connector.get_reminder_job_from_message_id(
+                payload.message_id
+            )
+            if job:
+                log.info(
+                    f"[REMINDME] Adding reminder [{job[0]}] for user [{payload.user_id}]"
+                )
+                # Duplicate user reminders are handled in the query itself
+                self._db_connector.add_reminder_for_user(job[0], payload.user_id)
 
 
 async def _scheduled_reminder(reminder_id: uuid.UUID, embed: discord.Embed):
@@ -242,10 +258,7 @@ async def _scheduled_reminder(reminder_id: uuid.UUID, embed: discord.Embed):
         reminder_dt (datetime.datetime): The timestamp of the reminder.
         reminder_msg (str): The reminder's message.
     """
-    log.info(
-        f"[REMINDME] Sending reminder [%s]",
-        reminder_id,
-    )
+    log.info(f"[REMINDME] Sending reminder [%s]", reminder_id)
 
     if not any(RemindMeCog.db_connector.get_reminder_jobs([reminder_id])):
         log.warning("[REMINDME] Reminder does not exist in database anymore. Skipping.")
