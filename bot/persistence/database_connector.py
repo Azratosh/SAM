@@ -215,6 +215,29 @@ class DatabaseConnector:
                 for row in result.fetchall()
             )
 
+    def get_reminder_job_from_message_id(
+        self, message_id: int
+    ) -> Optional[tuple[uuid.UUID, datetime.datetime, str, int]]:
+        """
+        Fetches the reminder job associated with a *discord.Message* from the
+        table *RemindmeJobs*. If no job was found, ``None`` is returned.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(
+                queries.GET_REMINDER_JOB_FROM_MESSAGE_ID, (message_id, )
+            )
+            row = result.fetchone()
+            return (
+                (
+                    uuid.UUID(row[0]),
+                    datetime.datetime.strptime(row[1], rm_const.REMINDER_DT_FORMAT),
+                    row[2],
+                    int(row[3]),
+                )
+                if row
+                else None
+            )
+
     def add_reminder_for_user(self, job_id: uuid.UUID, user_id: int):
         """
         Adds a reminder for a user to the table *RemindmeUserReminders*.
