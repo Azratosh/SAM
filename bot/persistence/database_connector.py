@@ -142,6 +142,7 @@ class DatabaseConnector:
         job_id: uuid.UUID,
         timestamp: datetime.datetime,
         message: str,
+        bot_msg_id: int,
     ):
         """
         Adds a new reminder job to the table *RemindmeJobs*.
@@ -155,10 +156,12 @@ class DatabaseConnector:
             timestamp (datetime.datetime): The date and time at which the reminder
                 should be issued.
             message (str): The reminder's message.
+            bot_msg_id (int): The ID of the *discord.Message* the bot had posted.
         """
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(
-                queries.INSERT_REMINDER_JOB, (str(job_id), str(timestamp), message)
+                queries.INSERT_REMINDER_JOB,
+                (str(job_id), str(timestamp), message, bot_msg_id),
             )
             db_manager.commit()
 
@@ -207,6 +210,7 @@ class DatabaseConnector:
                     uuid.UUID(row[0]),
                     datetime.datetime.strptime(row[1], constants.REMINDER_DT_FORMAT),
                     row[2],
+                    int(row[3]),
                 )
                 for row in result.fetchall()
             )
