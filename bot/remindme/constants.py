@@ -15,7 +15,7 @@ Note:
 import datetime
 import re
 
-REMINDER_EMOJI = "\U0001f5d3\ufe0f"
+REMINDER_EMOJI = "\U0001f4c5"
 REMINDER_DT_FORMAT = "%Y-%m-%d %H:%M:%S"
 REMINDER_DT_MESSAGE_FORMAT = "%d.%m.%y, %H:%M:%S"
 
