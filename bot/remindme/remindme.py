@@ -87,7 +87,7 @@ class RemindMeCog(commands.Cog):
             text=f"Klicke auf {rm_const.REMINDER_EMOJI} um diese Erinnerung ebenfalls zu erhalten.",
         )
 
-        sent_message = await ctx.send(embed=embed)
+        sent_message = await ctx.reply(embed=embed)
 
         if ctx.channel is not discord.DMChannel:
             reminder_msg += f"\n\n[Originale Nachricht]({sent_message.jump_url})"
@@ -212,9 +212,14 @@ class RemindMeCog(commands.Cog):
         """
         if isinstance(error, commands.CommandInvokeError):
             if isinstance(error.original, parser.ReminderParseError):
-                await ctx.send(
-                    "**Fehler beim Auslesen der Erinnerung:**"
-                    f"\n{str(error.original.args[0])}"
+                await ctx.message.delete(delay=60)
+                await ctx.message.reply(
+                    embed=discord.Embed(
+                        title="Fehler beim Auslesen der Erinnerung",
+                        description=f"{error.original.args[0]}",
+                        color=constants.EMBED_COLOR_WARNING
+                    ),
+                    delete_after=60
                 )
 
     @commands.Cog.listener(name="on_raw_reaction_add")
