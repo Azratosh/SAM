@@ -1,3 +1,26 @@
+"""Remindme Parser
+
+The main workhorse of the ``remindme`` command.
+
+Almost every single step in the parser uses the same principle:
+1. Strip whitespace from string
+2. Check for keyword (or variations thereof) at the *beginning* of the string
+3. If keyword matches, consume keyword and return expected values
+4. If keyword does not match, attempt different parsing function
+5. Repeat until desired result is achieved
+
+The only exception to this is the extraction of text within quotation marks,
+which simply checks for the existence of two or more quotes, and then extracts
+the text between the first and last quote character found.
+
+Note:
+    Whenever a parsing error expected to be caused by the user's input occurs,
+    the special *RemindmeParseError* exception is thrown. This allows more
+    granular exception handling.
+
+"""
+
+import datetime
 from typing import Optional, Union
 
 from dateutil import relativedelta
@@ -6,9 +29,7 @@ import bot.remindme.constants as rm_const
 
 
 class ReminderParseError(ValueError):
-    """
-    Custom exception class allowing for more granular exception handling
-    if required.
+    """Custom exception class allowing for more granular exception handling.
 
     Whenever this exception is thrown, the parsing process failed in an
     unrecoverable way, which *should* be caused by the user.
@@ -20,13 +41,14 @@ class ReminderParseError(ValueError):
 def parse(
     text: str, ref_dt: Optional[datetime.datetime] = None
 ) -> Union[tuple[datetime.datetime, str], tuple[None, None]]:
-    """
-    .. todo::
-        * docs: add clickable link to reminder specification
+    """Parses the given string, extracting a timestamp and message.
 
     Top-level routine that tries to parse ``message`` according to the
     reminder specification. A couple different parsing methods are attempted
     until one succeeds.
+
+    Todo:
+        * docs: add clickable link to reminder specification
 
     Args:
         text (str): The string to attempt to parse.
@@ -235,6 +257,9 @@ def parse_timestamp(
     Attempts to parse a timestamp from the given ``text`` according to the
     ``parse_method`` used.
 
+    If the ``datetime`` parse method is chosen, both date and time may appear
+    in the string irrespective of order or format.
+
     Args:
         text (str): The string to attempt to parse.
         parse_method (str): The parse method to use. Must be either ``time``,
@@ -356,7 +381,7 @@ def _match_timestamp_date(text: str) -> Union[tuple[str, str], tuple[None, None]
     Iterates over all date regex patterns, attempting to match any of them on the
     given ``text``.
 
-    .. note::
+    Note:
         Due to the behaviour of :obj:`re.Pattern.match`, the given string is
         always attempted to be matched from the *beginning.*
 
@@ -388,7 +413,7 @@ def _match_timestamp_time(text: str) -> Union[tuple[str, str], tuple[None, None]
     Additionally, if the string starts with ``24:00``, it is interpreted as
     ``00:00`` for user friendliness.
 
-    .. note::
+    Note:
         Due to the behaviour of :obj:`re.Pattern.match`, the given string is
         always attempted to be matched from the *beginning.*
 
@@ -453,7 +478,7 @@ def parse_duration(
     ``(duration, keyword)``, with the duration being a numeric value and the
     keyword being a string. Check the reminder specification for more information.
 
-    .. todo::
+    Todo:
         * docs: add clickable link to reminder specification
 
 
@@ -461,7 +486,7 @@ def parse_duration(
     performant parsing method is chosen. Otherwise, a method that involves more
     complicated guesswork is used instead.
 
-    .. warning::
+    Warning:
         Ensure that ``was_quoted`` is always set correctly in order to avoid
         potential side effects.
 
@@ -525,6 +550,9 @@ def parse_duration(
         value_error = None
         keyword_error = None
 
+        # Every two successfully parsed tokens are stored; as soon as either
+        # value or keyword parsing fails, a decision is made whether an error
+        # occurred or the user's message started.
         parsed_tokens: list[str] = []
 
         remainder = text
@@ -635,7 +663,7 @@ def _parse_duration_value(duration_value: str) -> float:
     """
     Attempts to convert a string into a float.
 
-    .. note::
+    Note:
         This function was made to be used specifically in :func:`parse_duration`
         in order to create :obj:`ReminderParseError` exceptions which are to
         handled during the parsing process.
@@ -663,7 +691,7 @@ def _parse_duration_keyword(duration_keyword: str):
     Attempts to find a matching duration key to be used as an argument in
     :obj:`~.relativedelta.relativedelta` corresponding to the keyword given.
 
-    .. note::
+    Note:
         This function was made to be used specifically in :func:`parse_duration`
         in order to create :obj:`ReminderParseError` exceptions which are to
         handled during the parsing process.
