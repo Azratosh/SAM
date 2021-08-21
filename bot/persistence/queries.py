@@ -82,12 +82,12 @@ GET_MEMBER_NAMES = "SELECT Name, Timestamp FROM MemberNameHistory WHERE UserID =
 
 
 # Remindme
-INSERT_REMINDER_JOB = "INSERT INTO RemindmeJobs (JobID, Timestamp, Message) VALUES (?, ?, ?)"
+INSERT_REMINDER_JOB = "INSERT INTO RemindmeJobs (JobID, Timestamp, Message, BotMessageID) VALUES (?, ?, ?, ?)"
 REMOVE_REMINDER_JOB = "DELETE FROM RemindmeJobs WHERE JobID = ?"
-GET_REMINDER_JOBS = "SELECT JobID, Timestamp, Message FROM RemindmeJobs"
+GET_REMINDER_JOBS = "SELECT JobID, Timestamp, Message, BotMessageID FROM RemindmeJobs"
 
 # Needs to be formatted for varargs
-GET_REMINDER_JOBS_CONDITIONAL = "SELECT JobID, Timestamp, Message FROM RemindmeJobs " \
+GET_REMINDER_JOBS_CONDITIONAL = "SELECT JobID, Timestamp, Message, BotMessageID FROM RemindmeJobs " \
                                 "WHERE JobID IN ({0})"
 
 INSERT_REMINDER_FOR_USER = "INSERT INTO RemindmeUserReminders (JobID, UserID) VALUES (?, ?)"
@@ -98,7 +98,7 @@ GET_REMINDERS_FOR_USER = "SELECT JobID, UserID FROM RemindmeUserReminders"
 GET_REMINDERS_FOR_USER_CONDITIONAL = "SELECT JobID, UserID FROM RemindmeUserReminders " \
                                      "WHERE UserID IN ({0})"
 
-GET_REMINDER_JOBS_FOR_USER = "SELECT job.JobId, job.Timestamp, job.Message " \
+GET_REMINDER_JOBS_FOR_USER = "SELECT job.JobId, job.Timestamp, job.Message, job.BotMessageID " \
                              "FROM RemindmeJobs job " \
                              "INNER JOIN RemindmeUserReminders user_reminder " \
                              "ON job.JobID = user_reminder.JobID " \
