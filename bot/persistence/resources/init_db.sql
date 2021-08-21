@@ -68,11 +68,13 @@ CREATE TABLE IF NOT EXISTS RemindmeJobs(
     JobID TEXT PRIMARY KEY,
     Timestamp Text NOT NULL,
     Message Text NOT NULL,
-    BotMessageID TEXT NOT NULL
+    BotMessageID TEXT NOT NULL,
+    UNIQUE(JobID)
 );
 
 CREATE TABLE IF NOT EXISTS RemindmeUserReminders(
     ID INTEGER PRIMARY KEY,
     JobID TEXT NOT NULL,
-    UserID TEXT NOT NULL
+    UserID TEXT NOT NULL,
+    UNIQUE(JobID, UserID)
 );
