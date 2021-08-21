@@ -84,14 +84,16 @@ GET_MEMBER_NAMES = "SELECT Name, Timestamp FROM MemberNameHistory WHERE UserID =
 # Remindme
 INSERT_REMINDER_JOB = "INSERT INTO RemindmeJobs (JobID, Timestamp, Message, BotMessageID) VALUES (?, ?, ?, ?)"
 REMOVE_REMINDER_JOB = "DELETE FROM RemindmeJobs WHERE JobID = ?"
-GET_REMINDER_JOBS = "SELECT JobID, Timestamp, Message, BotMessageID FROM RemindmeJobs"
+GET_REMINDER_JOBS = "SELECT JobID, Timestamp, Message, BotMessageID FROM RemindmeJobs " \
+                    "ORDER BY Timestamp ASC"
 GET_REMINDER_JOB_FROM_MESSAGE_ID = "SELECT JobID, Timestamp, Message, BotMessageID FROM RemindmeJobs " \
                                    "WHERE BotMessageID = ? " \
                                    "ORDER BY Timestamp ASC"
 
 # Needs to be formatted for varargs
 GET_REMINDER_JOBS_CONDITIONAL = "SELECT JobID, Timestamp, Message, BotMessageID FROM RemindmeJobs " \
-                                "WHERE JobID IN ({0})"
+                                "WHERE JobID IN ({0}) " \
+                                "ORDER BY Timestamp ASC"
 
 INSERT_REMINDER_FOR_USER = "INSERT INTO RemindmeUserReminders (JobID, UserID) VALUES (?, ?)"
 REMOVE_REMINDER_FOR_USER = "DELETE FROM RemindmeUserReminders WHERE JobID = ? AND UserID = ?"
