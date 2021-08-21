@@ -25,7 +25,7 @@ class RemindMeCog(commands.Cog):
         Args:
             bot (discord.ext.commands.Bot): The bot for which this cog should be enabled.
         """
-        self.bot = bot
+        self.bot: commands.Bot = bot
         self._db_connector = DatabaseConnector(
             constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT
         )
@@ -49,9 +49,10 @@ class RemindMeCog(commands.Cog):
     async def remindme(
         self, ctx: commands.Context, *, reminder_spec: Optional[str] = None
     ):
-        """
-        The main `remindme` command, which allows users to quickly create
-        reminders dynamically according to the reminder specification.
+        """The main command to create reminders.
+
+        Allows users to quickly create reminders dynamically according to the
+        reminder specification.
 
         If no reminder specification is provided, :py:meth:`remindme_help` is
         subsequently called.
@@ -140,6 +141,7 @@ class RemindMeCog(commands.Cog):
             reminder_dt (datetime.datetime): The date and time at which the
                 reminder should be sent.
             reminder_msg (str): The reminder's message.
+            bot_msg_id (int): The ID of the *discord.Message* the bot had posted.
         """
         loop = asyncio.get_running_loop()
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
@@ -205,7 +207,8 @@ class RemindMeCog(commands.Cog):
 
         Args:
             ctx (commands.Context): The context in which the command was invoked.
-            error (commands.CommandError): The error raised during the execution of the command.
+            error (commands.CommandError): The error raised during the execution
+                of the command.
         """
         if isinstance(error, commands.CommandInvokeError):
             if isinstance(error.original, parser.ReminderParseError):
@@ -237,8 +240,7 @@ async def _scheduled_reminder(reminder_id: uuid.UUID, embed: discord.Embed):
 
     Args:
         reminder_id (uuid.UUID): The reminder's UUID.
-        reminder_dt (datetime.datetime): The timestamp of the reminder.
-        reminder_msg (str): The reminder's message.
+        embed (discord.Embed): The embed for the reminder's message.
     """
     log.info(f"[REMINDME] Sending reminder [%s]", reminder_id)
 
@@ -283,7 +285,8 @@ async def _scheduled_reminder(reminder_id: uuid.UUID, embed: discord.Embed):
 
 
 async def _scheduled_reminder_vacuum():
-    """
+    """Housekeeping job for persistent data.
+
     Vacuums the *RemindmeJobs* and *RemindmeUserReminders* tables as well as
     the scheduler's stored data, ensuring that there are no dangling records
     floating around.
