@@ -5,10 +5,10 @@ import uuid
 from sqlite3 import Error
 from typing import List, Optional, Iterator, Iterable, Generator
 
-from bot import constants
 from bot.moderation import ModmailStatus
 from bot.feedback import SuggestionStatus
 from bot.persistence import queries
+import bot.remindme.constants as rm_const
 from .database_manager import DatabaseManager
 
 
@@ -208,7 +208,7 @@ class DatabaseConnector:
             return (
                 (
                     uuid.UUID(row[0]),
-                    datetime.datetime.strptime(row[1], constants.REMINDER_DT_FORMAT),
+                    datetime.datetime.strptime(row[1], rm_const.REMINDER_DT_FORMAT),
                     row[2],
                     int(row[3]),
                 )
