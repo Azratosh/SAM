@@ -206,13 +206,7 @@ class DatabaseConnector:
             else:
                 result = db_manager.execute(queries.GET_REMINDER_JOBS)
             return (
-                (
-                    uuid.UUID(row[0]),
-                    datetime.datetime.strptime(row[1], rm_const.REMINDER_DT_FORMAT),
-                    row[2],
-                    int(row[3]),
-                )
-                for row in result.fetchall()
+                self._convert_reminder_job_row_from_db(row) for row in result.fetchall()
             )
 
     def get_reminder_job_from_message_id(
@@ -224,19 +218,32 @@ class DatabaseConnector:
         """
         with DatabaseManager(self._db_file) as db_manager:
             result = db_manager.execute(
-                queries.GET_REMINDER_JOB_FROM_MESSAGE_ID, (message_id, )
+                queries.GET_REMINDER_JOB_FROM_MESSAGE_ID, (message_id,)
             )
             row = result.fetchone()
-            return (
-                (
-                    uuid.UUID(row[0]),
-                    datetime.datetime.strptime(row[1], rm_const.REMINDER_DT_FORMAT),
-                    row[2],
-                    int(row[3]),
-                )
-                if row
-                else None
-            )
+            return self._convert_reminder_job_row_from_db(row) if row else None
+
+    @staticmethod
+    def _convert_reminder_job_row_from_db(
+        row: tuple[str, str, str, str]
+    ) -> tuple[uuid.UUID, datetime.datetime, str, int]:
+        """
+        Converts a row fetched from the *RemindmeJobs* table into proper Python
+        types and objects.
+
+        Args:
+            row (tuple[str, str, str, str]): A row from the *RemindmeJobs* table.
+
+        Returns:
+            tuple[uuid.UUID, datetime.datetime, str, int]:
+                A tuple with the converted data.
+        """
+        return (
+            uuid.UUID(row[0]),
+            datetime.datetime.strptime(row[1], rm_const.REMINDER_DT_FORMAT),
+            row[2],
+            int(row[3]),
+        )
 
     def add_reminder_for_user(self, job_id: uuid.UUID, user_id: int):
         """
