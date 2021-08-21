@@ -89,18 +89,19 @@ class RemindMeCog(commands.Cog):
                 name="Erstellt von:",
                 value=f"{ctx.author.name}#{ctx.author.discriminator}",
             )
-            .set_footer(
-                text=f"Klicke auf {rm_const.REMINDER_EMOJI} um diese Erinnerung ebenfalls zu erhalten.",
-            )
         )
 
+        is_public = ctx.channel is not discord.DMChannel
+        if is_public:
+            embed.set_footer(
+                text=f"Klicke auf {rm_const.REMINDER_EMOJI} um diese Erinnerung ebenfalls zu erhalten.",
+            )
+
         sent_message = await ctx.reply(embed=embed)
+        await self.schedule_reminder(ctx, reminder_dt, reminder_msg, sent_message)
 
-        if ctx.channel is not discord.DMChannel:
-            reminder_msg += f"\n\n[Originale Nachricht]({sent_message.jump_url})"
-
-        await self.schedule_reminder(ctx, reminder_dt, reminder_msg, sent_message.id)
-        await sent_message.add_reaction(rm_const.REMINDER_EMOJI)
+        if is_public:
+            await sent_message.add_reaction(rm_const.REMINDER_EMOJI)
 
     @remindme.command(name="help")  # use class HelpCommand (?)
     @command_log
@@ -136,7 +137,7 @@ class RemindMeCog(commands.Cog):
         ctx: commands.Context,
         reminder_dt: datetime.datetime,
         reminder_msg: str,
-        bot_msg_id: int,
+        bot_msg: discord.Message,
     ):
         """
         Launches a new thread that schedules the reminder in the background,
@@ -148,14 +149,14 @@ class RemindMeCog(commands.Cog):
             reminder_dt (datetime.datetime): The date and time at which the
                 reminder should be sent.
             reminder_msg (str): The reminder's message.
-            bot_msg_id (int): The ID of the *discord.Message* the bot had posted.
+            bot_msg (discord.Message): The *discord.Message* the bot had posted.
         """
         loop = asyncio.get_running_loop()
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
             await loop.run_in_executor(
                 executor=executor,
                 func=functools.partial(
-                    self._schedule_reminder, ctx, reminder_dt, reminder_msg, bot_msg_id
+                    self._schedule_reminder, ctx, reminder_dt, reminder_msg, bot_msg
                 ),
             )
 
@@ -164,7 +165,7 @@ class RemindMeCog(commands.Cog):
         ctx: commands.Context,
         reminder_dt: datetime.datetime,
         reminder_msg: str,
-        bot_msg_id: int,
+        bot_msg: discord.Message,
     ):
         """
         The blocking function that is used in :func:`schedule_reminder`.
@@ -179,18 +180,18 @@ class RemindMeCog(commands.Cog):
             reminder_dt (datetime.datetime): The date and time at which the
                 reminder should be sent.
             reminder_msg (str): The reminder's message.
-            bot_msg_id (int): The ID of the *discord.Message* the bot had posted.
+            bot_msg (discord.Message): The *discord.Message* the bot had posted.
         """
         reminder_uuid = uuid.uuid4()
 
         self._db_connector.add_reminder_job(
-            reminder_uuid, reminder_dt, reminder_msg, bot_msg_id
+            reminder_uuid, reminder_dt, reminder_msg, bot_msg.id
         )
         self._db_connector.add_reminder_for_user(reminder_uuid, ctx.author.id)
 
         reminder_embed = discord.Embed(
             title="Erinnerung :calendar_spiral:",
-            description=reminder_msg,
+            description=reminder_msg + f"\n\n[Originale Nachricht]({bot_msg.jump_url})",
             color=constants.EMBED_COLOR_INFO,
         ).set_footer(text=f"Erstellt von {ctx.author.name}#{ctx.author.discriminator}")
 
@@ -201,6 +202,16 @@ class RemindMeCog(commands.Cog):
             args=[reminder_uuid, reminder_embed],
             id=str(reminder_uuid),
             replace_existing=True,
+        )
+
+        log.info(
+            "[REMINDME] %s#%s (%s) created a new reminder: [%s] (%s) Message: %s",
+            ctx.author.name,
+            ctx.author.discriminator,
+            ctx.author.id,
+            reminder_uuid,
+            reminder_dt.strftime(rm_const.REMINDER_DT_FORMAT),
+            reminder_msg,
         )
 
     @remindme.error
