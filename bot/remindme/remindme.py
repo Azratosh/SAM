@@ -75,16 +75,23 @@ class RemindMeCog(commands.Cog):
                 "damit ich sie dir auch zustellen kann."
             )
 
-        embed = discord.Embed(
-            title=f"Erinnerung {rm_const.REMINDER_EMOJI}",
-            description=reminder_msg,
-            colour=constants.EMBED_COLOR_INFO,
-        ).add_field(
-            name="Wann:", value=f"{reminder_dt.strftime(rm_const.REMINDER_DT_MESSAGE_FORMAT)}"
-        ).add_field(
-            name="Erstellt von:", value=f"{ctx.author.mention}"
-        ).set_footer(
-            text=f"Klicke auf {rm_const.REMINDER_EMOJI} um diese Erinnerung ebenfalls zu erhalten.",
+        embed = (
+            discord.Embed(
+                title=f"Erinnerung {rm_const.REMINDER_EMOJI}",
+                description=reminder_msg,
+                colour=constants.EMBED_COLOR_INFO,
+            )
+            .add_field(
+                name="Wann:",
+                value=f"{reminder_dt.strftime(rm_const.REMINDER_DT_MESSAGE_FORMAT)}",
+            )
+            .add_field(
+                name="Erstellt von:",
+                value=f"{ctx.author.name}#{ctx.author.discriminator}",
+            )
+            .set_footer(
+                text=f"Klicke auf {rm_const.REMINDER_EMOJI} um diese Erinnerung ebenfalls zu erhalten.",
+            )
         )
 
         sent_message = await ctx.reply(embed=embed)
@@ -185,9 +192,7 @@ class RemindMeCog(commands.Cog):
             title="Erinnerung :calendar_spiral:",
             description=reminder_msg,
             color=constants.EMBED_COLOR_INFO,
-        ).set_footer(
-            text=f"Erstellt von {ctx.author.name}#{ctx.author.discriminator}"
-        )
+        ).set_footer(text=f"Erstellt von {ctx.author.name}#{ctx.author.discriminator}")
 
         singletons.SCHEDULER.add_job(
             _scheduled_reminder,
@@ -217,9 +222,9 @@ class RemindMeCog(commands.Cog):
                     embed=discord.Embed(
                         title="Fehler beim Auslesen der Erinnerung",
                         description=f"{error.original.args[0]}",
-                        color=constants.EMBED_COLOR_WARNING
+                        color=constants.EMBED_COLOR_WARNING,
                     ),
-                    delete_after=60
+                    delete_after=60,
                 )
 
     @commands.Cog.listener(name="on_raw_reaction_add")
