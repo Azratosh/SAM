@@ -23,7 +23,8 @@ class RemindMeCog(commands.Cog):
             * Link reminder specification in !remindme help message
 
         Args:
-            bot (discord.ext.commands.Bot): The bot for which this cog should be enabled.
+            bot (discord.ext.commands.Bot): The bot for which this cog should
+                be enabled.
         """
         self.bot: commands.Bot = bot
         self._db_connector = DatabaseConnector(
@@ -94,7 +95,8 @@ class RemindMeCog(commands.Cog):
         is_public = ctx.channel is not discord.DMChannel
         if is_public:
             embed.set_footer(
-                text=f"Klicke auf {rm_const.REMINDER_EMOJI} um diese Erinnerung ebenfalls zu erhalten.",
+                text=f"Klicke auf {rm_const.REMINDER_EMOJI} um diese "
+                "Erinnerung ebenfalls zu erhalten.",
             )
 
         sent_message = await ctx.reply(embed=embed)
@@ -284,8 +286,8 @@ async def _scheduled_reminder(reminder_id: uuid.UUID, embed: discord.Embed):
             except Exception as e:
                 skipped_count += 1
                 log.exception(
-                    "[REMINDME] Encountered an unexpected exception when sending reminder "
-                    "to user [%s] [%s]:",
+                    "[REMINDME] Encountered an unexpected exception when "
+                    "sending reminder to user [%s] [%s]:",
                     user.name,
                     user.id,
                     exc_info=e,

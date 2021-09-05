@@ -133,7 +133,8 @@ def parse(
 
     # 6: Sanitize resulting datetime, truncating seconds and microseconds
     parsed_datetime = datetime.datetime.strptime(
-        parsed_datetime.strftime(rm_const.REMINDER_DT_FORMAT), rm_const.REMINDER_DT_FORMAT
+        parsed_datetime.strftime(rm_const.REMINDER_DT_FORMAT),
+        rm_const.REMINDER_DT_FORMAT,
     )
 
     reminder_message = quoted_text or remaining_message
@@ -295,7 +296,8 @@ def parse_timestamp(
     if date_str:
         if parse_method not in ("datetime", "date"):
             raise ReminderParseError(
-                "Der Zeitstempel enthält ein Datum, obwohl nur eine Uhrzeit verlangt wird."
+                "Der Zeitstempel enthält ein Datum, "
+                "obwohl nur eine Uhrzeit verlangt wird."
             )
 
         date_str_n, date_format_n = _normalize_date_str(date_str, date_format, ref_dt)
@@ -312,7 +314,8 @@ def parse_timestamp(
         if time_str:
             if parse_method != "datetime":
                 raise ReminderParseError(
-                    "Der Zeitstempel enthält eine Uhrzeit, obwohl nur ein Datum verlangt wird."
+                    "Der Zeitstempel enthält eine Uhrzeit, "
+                    "obwohl nur ein Datum verlangt wird."
                 )
 
             time_ = datetime.datetime.strptime(time_str, time_format).time()
@@ -326,9 +329,7 @@ def parse_timestamp(
 
         else:
             if not date_ > ref_dt.date():
-                raise ReminderParseError(
-                    "Das Datum muss in der Zukunft liegen wenn keine Zeit angegeben wird."
-                )
+                raise ReminderParseError("Das Datum muss in der Zukunft liegen.")
 
             time_ = datetime.time(9, 0)
 
@@ -345,7 +346,8 @@ def parse_timestamp(
         if date_str:
             if parse_method != "datetime":
                 raise ReminderParseError(
-                    "Der Zeitstempel enthält ein Datum, obwohl nur eine Uhrzeit verlangt wird."
+                    "Der Zeitstempel enthält ein Datum, "
+                    "obwohl nur eine Uhrzeit verlangt wird."
                 )
 
             date_str_n, date_format_n = _normalize_date_str(

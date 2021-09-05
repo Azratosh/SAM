@@ -90,5 +90,5 @@ object using :obj:`datetime.datetime.strptime`.
 
 These pairs are used to parse two different time formats that users might
 specify, either 24-hour clock or 12-hour clock, including an additional regex
-for the 12-hour clock format, for fault-tolerance's sake.
+for the 12-hour clock format, for fault tolerance's sake.
 """
