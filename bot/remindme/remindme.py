@@ -110,6 +110,30 @@ class RemindMeCog(commands.Cog):
     async def remindme_help(self, ctx: commands.Context):
         await ctx.send(":construction_site: Under construction :construction_site:")
 
+    @remindme.command(name="system", hidden=True)
+    @command_log
+    async def remindme_system(self, ctx: commands.Context):
+        """Create a system reminder."""
+        await ctx.send(":construction_site: Under construction :construction_site:")
+
+    @remindme.command(name="list", aliases=("ls",))
+    @command_log
+    async def remindme_list(self, ctx: commands.Context):
+        """List available reminders."""
+        await ctx.send(":construction_site: Under construction :construction_site:")
+
+    @remindme.command(name="show")
+    @command_log
+    async def remindme_show(self, ctx: commands.Context):
+        """Show a reminder in detail."""
+        await ctx.send(":construction_site: Under construction :construction_site:")
+
+    @remindme.command(name="delete", aliases=("remove", "rm"))
+    @command_log
+    async def remindme_delete(self, ctx: commands.Context):
+        """Delete a reminder."""
+        await ctx.send(":construction_site: Under construction :construction_site:")
+
     async def parse_reminder(self, reminder_spec: str) -> tuple[datetime.datetime, str]:
         """
         Launches a new thread in order to parse the reminder's specification,
