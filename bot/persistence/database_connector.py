@@ -158,7 +158,10 @@ class DatabaseConnector:
             timestamp (datetime.datetime): The date and time at which the reminder
                 should be issued.
             message (str): The reminder's message.
-            bot_msg_id (int): The ID of the *discord.Message* the bot had posted.
+            message_id (int): The ID of the *discord.Message* the bot had posted.
+            channel_id (int): The ID of the *discord.TextChannel* the bot's message
+                was posted in.
+            author_id (int): The ID of the user that originally created the reminder.
         """
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(
@@ -190,7 +193,7 @@ class DatabaseConnector:
         are specified, fetches all jobs.
 
         Args:
-            job_ids (Optional[Iterable[uuid.UUID]]):
+            job_ids (Optional[list[uuid.UUID]]):
                 An optional list of reminder job UUIDs.
 
         Returns:
@@ -237,8 +240,8 @@ class DatabaseConnector:
             row (tuple[str, str, str, str]): A row from the *RemindmeJobs* table.
 
         Returns:
-            tuple[uuid.UUID, datetime.datetime, str, int]:
-                A tuple with the converted data.
+            tuple[uuid.UUID, datetime.datetime, str, int, int, int]:
+                A tuple containing the converted data.
         """
         return (
             uuid.UUID(row[0]),
@@ -332,8 +335,8 @@ class DatabaseConnector:
             user_id (int): The user ID to fetch the reminder jobs for.
 
         Returns:
-            Generator[uuid.UUID, None, None]: A generator that yields reminder
-                jobs that correspond to the given user ID.
+            Generator[tuple[uuid.UUID, datetime.datetime, str, int], None, None]:
+                A generator that yields reminder jobs that correspond to the given user ID.
         """
         with DatabaseManager(self._db_file) as db_manager:
             return (
@@ -342,6 +345,7 @@ class DatabaseConnector:
                     queries.GET_REMINDER_JOBS_FOR_USER, (user_id,)
                 ).fetchall()
             )
+
 
     def get_users_for_reminder_job(
         self, job_id: uuid.UUID
