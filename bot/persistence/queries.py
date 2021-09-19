@@ -82,16 +82,17 @@ GET_MEMBER_NAMES = "SELECT Name, Timestamp FROM MemberNameHistory WHERE UserID =
 
 
 # Remindme
-INSERT_REMINDER_JOB = "INSERT OR IGNORE INTO RemindmeJobs (JobID, Timestamp, Message, BotMessageID) VALUES (?, ?, ?, ?)"
+INSERT_REMINDER_JOB = "INSERT OR IGNORE INTO RemindmeJobs (JobID, Timestamp, Message, MessageID, ChannelID, AuthorID) " \
+                      "VALUES (?, ?, ?, ?, ?, ?)"
 REMOVE_REMINDER_JOB = "DELETE FROM RemindmeJobs WHERE JobID = ?"
-GET_REMINDER_JOBS = "SELECT JobID, Timestamp, Message, BotMessageID FROM RemindmeJobs " \
+GET_REMINDER_JOBS = "SELECT JobID, Timestamp, Message, MessageID, ChannelID, AuthorID FROM RemindmeJobs " \
                     "ORDER BY Timestamp ASC"
-GET_REMINDER_JOB_FROM_MESSAGE_ID = "SELECT JobID, Timestamp, Message, BotMessageID FROM RemindmeJobs " \
+GET_REMINDER_JOB_FROM_MESSAGE_ID = "SELECT JobID, Timestamp, Message, MessageID, ChannelID, AuthorID FROM RemindmeJobs " \
                                    "WHERE BotMessageID = ? " \
                                    "ORDER BY Timestamp ASC"
 
 # Needs to be formatted for varargs
-GET_REMINDER_JOBS_CONDITIONAL = "SELECT JobID, Timestamp, Message, BotMessageID FROM RemindmeJobs " \
+GET_REMINDER_JOBS_CONDITIONAL = "SELECT JobID, Timestamp, Message, MessageID, ChannelID, AuthorID FROM RemindmeJobs " \
                                 "WHERE JobID IN ({0}) " \
                                 "ORDER BY Timestamp ASC"
 
@@ -103,11 +104,11 @@ GET_REMINDERS_FOR_USER = "SELECT JobID, UserID FROM RemindmeUserReminders"
 GET_REMINDERS_FOR_USER_CONDITIONAL = "SELECT JobID, UserID FROM RemindmeUserReminders " \
                                      "WHERE UserID IN ({0})"
 
-GET_REMINDER_JOBS_FOR_USER = "SELECT job.JobId, job.Timestamp, job.Message, job.BotMessageID " \
-                             "FROM RemindmeJobs job " \
-                             "INNER JOIN RemindmeUserReminders user_reminder " \
+GET_REMINDER_JOBS_FOR_USER = "SELECT job.JobID, job.Timestamp, job.Message, job.MessageID, job.ChannelID, job.AuthorID " \
+                             "FROM RemindmeJobs AS job " \
+                             "INNER JOIN RemindmeUserReminders AS user_reminder " \
                              "ON job.JobID = user_reminder.JobID " \
                              "WHERE user_reminder.UserID = ? " \
                              "ORDER BY job.Timestamp ASC"
 
-GET_USERS_FOR_REMINDER_JOB = "Select UserID FROM RemindmeUserReminders WHERE JobID = ?"
+GET_USERS_FOR_REMINDER_JOB = "SELECT UserID FROM RemindmeUserReminders WHERE JobID = ?"

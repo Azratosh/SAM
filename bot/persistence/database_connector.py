@@ -142,7 +142,9 @@ class DatabaseConnector:
         job_id: uuid.UUID,
         timestamp: datetime.datetime,
         message: str,
-        bot_msg_id: int,
+        message_id: int,
+        channel_id: int,
+        author_id: int,
     ):
         """
         Adds a new reminder job to the table *RemindmeJobs*.
@@ -161,7 +163,7 @@ class DatabaseConnector:
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(
                 queries.INSERT_REMINDER_JOB,
-                (str(job_id), str(timestamp), message, bot_msg_id),
+                (str(job_id), str(timestamp), message, message_id, channel_id, author_id),
             )
             db_manager.commit()
 
@@ -181,7 +183,7 @@ class DatabaseConnector:
             db_manager.commit()
 
     def get_reminder_jobs(
-        self, job_ids: Optional[Iterable[uuid.UUID]] = None
+        self, job_ids: Optional[list[uuid.UUID]] = None
     ) -> Generator[tuple, None, None]:
         """
         Fetches the specified jobs from the table *RemindmeJobs*. If no jobs
@@ -226,7 +228,7 @@ class DatabaseConnector:
     @staticmethod
     def _convert_reminder_job_row_from_db(
         row: tuple[str, str, str, str]
-    ) -> tuple[uuid.UUID, datetime.datetime, str, int]:
+    ) -> tuple[uuid.UUID, datetime.datetime, str, int, int, int]:
         """
         Converts a row fetched from the *RemindmeJobs* table into proper Python
         types and objects.
@@ -243,6 +245,8 @@ class DatabaseConnector:
             datetime.datetime.strptime(row[1], rm_const.REMINDER_DT_FORMAT),
             row[2],
             int(row[3]),
+            int(row[4]),
+            int(row[5]),
         )
 
     def add_reminder_for_user(self, job_id: uuid.UUID, user_id: int):
@@ -319,7 +323,7 @@ class DatabaseConnector:
 
     def get_reminder_jobs_for_user(
         self, user_id: int
-    ) -> Generator[uuid.UUID, None, None]:
+    ) -> Generator[tuple[uuid.UUID, datetime.datetime, str, int, int, int], None, None]:
         """
         Fetches all reminder jobs from table *RemindmeJobs* that are associated
         with a user.
@@ -333,7 +337,7 @@ class DatabaseConnector:
         """
         with DatabaseManager(self._db_file) as db_manager:
             return (
-                uuid.UUID(row[0])
+                self._convert_reminder_job_row_from_db(row)
                 for row in db_manager.execute(
                     queries.GET_REMINDER_JOBS_FOR_USER, (user_id,)
                 ).fetchall()
