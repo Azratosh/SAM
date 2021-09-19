@@ -251,13 +251,139 @@ class RemindMeCog(commands.Cog):
     @command_log
     async def remindme_list(self, ctx: commands.Context):
         """List available reminders."""
-        await ctx.send(":construction_site: Under construction :construction_site:")
 
-    @remindme.command(name="show")
+        if isinstance(ctx.channel, discord.DMChannel):
+            is_moderator = False
+        else:
+            is_moderator = bool(
+                discord.utils.get(ctx.author.roles, id=int(constants.ROLE_ID_MODERATOR))
+            )
+
+        reminder_jobs = self.fetch_reminders(ctx, is_moderator)
+
+        if not reminder_jobs:
+            await self.handle_no_jobs_found(ctx)
+            return
+
+        # Generate pages
+        # Each page is an embed that contains REMINDER_LIST_PAGE_ITEM_COUNT jobs
+        # at most.
+        pages = []
+        for page_index in range(
+            0, len(reminder_jobs), rm_const.REMINDER_LIST_PAGE_ITEM_COUNT
+        ):
+            page_embed = discord.Embed(
+                title=f"Reminders {rm_const.REMINDER_EMOJI}",
+                colour=constants.EMBED_COLOR_INFO,
+            )
+
+            for page_job_index, job_id in enumerate(
+                reminder_jobs[
+                    page_index : page_index + rm_const.REMINDER_LIST_PAGE_ITEM_COUNT
+                ]
+            ):
+                # Moderators are also able to see the reminder's UUID
+                # for easier deletion, as well as who created the reminder
+                if is_moderator:
+                    member: discord.Member = self.guild.get_member(job_id[5])
+                    author = member.mention if member else ""
+                else:
+                    author = ""
+                page_embed.add_field(
+                    name=f"#{page_index + page_job_index + 1}"
+                    f" - {job_id[1].strftime(rm_const.REMINDER_DT_MESSAGE_FORMAT)}",
+                    value=f"{job_id[2] if len(job_id[2]) <= 50 else f'{job_id[2][:45]} ...'}"
+                    f"\n\n{f'`{str(job_id[0])}` {author}' if is_moderator else ''}",
+                    inline=False,
+                )
+
+            pages.append(page_embed)
+
+        # Add page number to each page if there are multiple pages
+        # and enable browsing
+        if len(pages) > 1:
+            for index, page in enumerate(pages, 1):
+                page.set_footer(text=f"{rm_const.REMINDER_EMOJI} {index}/{len(pages)}")
+
+            def check(reaction_, user_):
+                return user_ == ctx.author and str(reaction_.emoji) in (
+                    constants.EMOJI_ARROW_BACKWARD,
+                    constants.EMOJI_ARROW_FORWARD,
+                )
+
+            current_page = 0
+
+            message = await ctx.send(embed=pages[current_page])
+            await message.add_reaction(constants.EMOJI_ARROW_BACKWARD)
+            await message.add_reaction(constants.EMOJI_ARROW_FORWARD)
+
+            # TODO: better browsing in DMs
+            while True:
+                try:
+                    reaction, user = await self.bot.wait_for(
+                        "reaction_add", timeout=60, check=check
+                    )
+
+                    if (
+                        str(reaction.emoji) == constants.EMOJI_ARROW_FORWARD
+                        and current_page < len(pages) - 1
+                    ):
+                        current_page += 1
+                        await message.edit(embed=pages[current_page])
+                        if not isinstance(ctx.channel, discord.DMChannel):
+                            await message.remove_reaction(reaction, user)
+
+                    elif (
+                        str(reaction.emoji) == constants.EMOJI_ARROW_BACKWARD
+                        and current_page > 0
+                    ):
+                        current_page -= 1
+                        await message.edit(embed=pages[current_page])
+                        if not isinstance(ctx.channel, discord.DMChannel):
+                            await message.remove_reaction(reaction, user)
+
+                    else:
+                        if not isinstance(ctx.channel, discord.DMChannel):
+                            await message.remove_reaction(reaction, user)
+
+                except asyncio.TimeoutError:
+                    if is_moderator or isinstance(ctx.channel, discord.DMChannel):
+                        embed = pages[current_page].set_footer(
+                            text="Diese Nachricht ist nun inaktiv."
+                        )
+                        await message.edit(embed=embed)
+                        await message.clear_reactions()
+                    else:
+                        await ctx.message.delete()
+                        await message.delete()
+                    break
+
+        else:
+            await ctx.send(
+                embed=pages[0],
+                delete_after=None if isinstance(ctx.channel, discord.DMChannel) else 60,
+            )
+
+    @remindme.command(name="view")
     @command_log
-    async def remindme_show(self, ctx: commands.Context):
-        """Show a reminder in detail."""
-        await ctx.send(":construction_site: Under construction :construction_site:")
+    async def remindme_view(self, ctx: commands.Context, id_: Union[int, str]):
+        """View a reminder via its list index or UUID.
+
+        Args:
+            ctx (commands.Context): The command's invocation context.
+            id_ (Union[int, str]): The index or UUID of the reminder to view.
+        """
+        try:
+            job = await self.fetch_reminder_job_via_id(ctx, id_)
+        except ValueError:
+            await ctx.send(
+                embed=discord.Embed(title="Fehler", description="Ungültige ID.")
+            )
+        else:
+            if job is None:
+                await self.handle_no_job_with_id_found(ctx)
+            else:
+                await ctx.send(embed=await self.create_reminder_embed_from_job(job))
 
     @remindme.command(name="delete", aliases=("remove", "rm"))
     @command_log
