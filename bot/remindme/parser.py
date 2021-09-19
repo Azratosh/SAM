@@ -63,7 +63,8 @@ def parse(
             returned instead.
 
     Raises:
-        ReminderParseError: If an error happens during the entire parsing process.
+        ReminderParseError: If an error happens during the entire parsing
+            process or if the parsed message is longer than 1750 characters.
     """
     text_ = text.strip()
     if ref_dt is None:
@@ -138,6 +139,13 @@ def parse(
     )
 
     reminder_message = quoted_text or remaining_message
+
+    if len(reminder_message) > 1750:
+        raise ReminderParseError(
+            "Die Nachricht deiner Erinnerung ist leider zu lang.\n"
+            "Bitte stelle sicher, dass sie maximal 1750 Zeichen hat, "
+            "damit ich sie dir auch zustellen kann."
+        )
 
     return parsed_datetime, reminder_message
 
