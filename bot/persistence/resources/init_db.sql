@@ -68,7 +68,9 @@ CREATE TABLE IF NOT EXISTS RemindmeJobs(
     JobID TEXT PRIMARY KEY,
     Timestamp Text NOT NULL,
     Message Text NOT NULL,
-    BotMessageID TEXT NOT NULL,
+    MessageID TEXT NOT NULL,
+    ChannelID TEXT NOT NULL,
+    AuthorID TEXT NOT NULL,
     UNIQUE(JobID)
 );
 
