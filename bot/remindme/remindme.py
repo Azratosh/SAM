@@ -145,10 +145,107 @@ class RemindMeCog(commands.Cog):
         await ctx.send(":construction_site: Under construction :construction_site:")
 
     @remindme.command(name="system", hidden=True)
+    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
     @command_log
-    async def remindme_system(self, ctx: commands.Context):
-        """Create a system reminder."""
-        await ctx.send(":construction_site: Under construction :construction_site:")
+    async def remindme_system(
+        self,
+        ctx: commands.Context,
+        title: str,
+        channel: Optional[discord.TextChannel] = None,
+        *,
+        reminder_spec: Optional[str] = None,
+    ):
+        """Create a system reminder.
+
+        This command is essentially the same as the bare ``!remindme``, except
+        that it may be used by moderators to post a reminder with a title to a
+        specific channel.
+
+        System reminders cannot be posted in DM channels.
+
+        Args:
+            ctx (commands.Context):
+                The command's invocation context.
+            title (str):
+                The title of the reminder.
+            channel (Optional[discord.TextChannel]):
+                The channel in which the reminder should be posted.
+            reminder_spec (Optional[str]):
+                The reminder's specification that should be parsed.
+
+        """
+
+        if reminder_spec is None:
+            await ctx.message.delete()
+            return
+
+        if channel is None:
+            channel = ctx.channel
+
+        if not isinstance(channel, discord.TextChannel):
+            await ctx.message.delete()
+            await ctx.send(
+                embed=discord.Embed(
+                    title="Fehler",
+                    description="Eine System-Erinnerung kann nur auf einem Server "
+                    "gepostet werden.",
+                    colour=constants.EMBED_COLOR_WARNING,
+                )
+            )
+            return
+
+        reminder_dt, reminder_msg = await self.parse_reminder(reminder_spec)
+
+        embed = self.create_reminder_embed(
+            reminder_msg, reminder_dt=reminder_dt, title=title, author=self.bot.user
+        )
+
+        sent_message = await channel.send(embed=embed)
+        reminder_uuid = uuid.uuid4()
+
+        try:
+            self._db_connector.add_reminder_job(
+                reminder_uuid,
+                reminder_dt,
+                reminder_msg,
+                sent_message.id,
+                ctx.channel.id,
+                self.bot.user,
+            )
+
+            singletons.SCHEDULER.add_job(
+                _scheduled_reminder,
+                trigger="date",
+                run_date=reminder_dt,
+                args=[reminder_uuid],
+                id=str(reminder_uuid),
+                replace_existing=True,
+            )
+
+            log.info(
+                "[REMINDME] %s#%s (%s) created a new reminder: [%s] (%s) Message: %s",
+                ctx.author.name,
+                ctx.author.discriminator,
+                ctx.author.id,
+                reminder_uuid,
+                reminder_dt.strftime(rm_const.REMINDER_DT_FORMAT),
+                reminder_msg,
+            )
+
+        except Exception:
+            self._db_connector.remove_reminder_job(reminder_uuid)
+            await sent_message.delete()
+            await ctx.send(
+                embed=discord.Embed(
+                    title="Fehler",
+                    description="Etwas ist beim Erstellen der System-Erinnerung "
+                    "schief gelaufen.",
+                    colour=constants.EMBED_COLOR_WARNING,
+                )
+            )
+
+        else:
+            await sent_message.add_reaction(rm_const.REMINDER_EMOJI)
 
     @remindme.command(name="list", aliases=("ls",))
     @command_log
