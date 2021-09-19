@@ -387,9 +387,63 @@ class RemindMeCog(commands.Cog):
 
     @remindme.command(name="delete", aliases=("remove", "rm"))
     @command_log
-    async def remindme_delete(self, ctx: commands.Context):
-        """Delete a reminder."""
-        await ctx.send(":construction_site: Under construction :construction_site:")
+    async def remindme_delete(self, ctx: commands.Context, id_: Union[int, str]):
+        """Delete a reminder via its list index or UUID.
+
+        The reminder is only deleted for the user that issued the command.
+
+        Args:
+            ctx (commands.Context): The command's invocation context.
+            id_ (Union[int, str]): The index or UUID of the reminder to delete.
+        """
+        try:
+            job = await self.fetch_reminder_job_via_id(ctx, id_)
+        except ValueError:
+            await ctx.send(
+                embed=discord.Embed(title="Fehler", description="Ungültige ID.")
+            )
+        else:
+            if job is None:
+                await self.handle_no_job_with_id_found(ctx)
+            else:
+                # TODO: Confirmation
+                self._db_connector.remove_reminder_for_user(job[0], ctx.author.id)
+                await ctx.send(
+                    embed=discord.Embed(
+                        description="Die Erinnerung wurde erfolgreich gelöscht.",
+                        colour=constants.EMBED_COLOR_INFO,
+                    )
+                )
+
+    @remindme.command(name="purge")
+    @commands.has_role(int(constants.ROLE_ID_MODERATOR))
+    @command_log
+    async def remindme_purge(self, ctx: commands.Context, id_: Union[int, str]):
+        """Purge a reminder from the database.
+
+        Args:
+            ctx (commands.Context): The command's invocation context.
+            id_ (Union[int, str]): The index or UUID of the reminder to purge.
+        """
+        try:
+            job = await self.fetch_reminder_job_via_id(ctx, id_)
+        except ValueError:
+            await ctx.send(
+                embed=discord.Embed(title="Fehler", description="Ungültige ID.")
+            )
+        else:
+            if job is None:
+                await self.handle_no_job_with_id_found(ctx)
+            else:
+                # TODO: Confirmation
+                self._db_connector.remove_reminder_job(job[0])
+                await ctx.send(
+                    embed=discord.Embed(
+                        description=f"Die Erinnerung mit UUID `{job[0]}` wurde "
+                        f"erfolgreich von der Datenbank enfernt.",
+                        color=constants.EMBED_COLOR_MODLOG_PURGE,
+                    )
+                )
 
     async def parse_reminder(self, reminder_spec: str) -> tuple[datetime.datetime, str]:
         """
