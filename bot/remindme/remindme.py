@@ -643,6 +643,7 @@ class RemindMeCog(commands.Cog):
             ),
             delete_after=60,
         )
+        await ctx.message.delete(delay=60)
 
     @remindme.error
     async def remindme_error(self, ctx: commands.Context, error):
