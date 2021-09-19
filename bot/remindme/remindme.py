@@ -2,7 +2,7 @@ import asyncio
 import concurrent.futures
 import datetime
 import functools
-from typing import Optional
+from typing import Optional, Union
 import uuid
 
 import discord
@@ -31,10 +31,17 @@ class RemindMeCog(commands.Cog):
             constants.DB_FILE_PATH, constants.DB_INIT_SCRIPT
         )
 
+        self.guild: discord.Guild = self.bot.get_guild(int(constants.SERVER_ID))
+        self.channel_mod_log: discord.TextChannel = self.guild.get_channel(
+            int(constants.CHANNEL_ID_MODLOG)
+        )
+
         # Static variables which are needed for running jobs created by the scheduler.
         # For the entire explanation see ./SAM/bot/moderation/moderation.ModerationCog
         RemindMeCog.bot = self.bot
         RemindMeCog.db_connector = self._db_connector
+        RemindMeCog.guild = self.guild
+        RemindMeCog.channel_mod_log = self.channel_mod_log
 
         singletons.SCHEDULER.add_job(
             _scheduled_reminder_vacuum,
@@ -62,6 +69,7 @@ class RemindMeCog(commands.Cog):
             ctx (commands.Context): The command's invocation context.
             reminder_spec (Optional[str]): The reminder's specification that
                 should be parsed.
+
         """
         if reminder_spec is None:
             await self.remindme_help(ctx)
@@ -69,27 +77,8 @@ class RemindMeCog(commands.Cog):
 
         reminder_dt, reminder_msg = await self.parse_reminder(reminder_spec)
 
-        if len(reminder_msg) > 1750:
-            await ctx.send(
-                "Die Nachricht deiner Erinnerung ist leider zu lang.\n"
-                "Bitte stelle sicher, dass sie maximal 1750 Zeichen hat, "
-                "damit ich sie dir auch zustellen kann."
-            )
-
-        embed = (
-            discord.Embed(
-                title=f"Erinnerung {rm_const.REMINDER_EMOJI}",
-                description=reminder_msg,
-                colour=constants.EMBED_COLOR_INFO,
-            )
-            .add_field(
-                name="Wann:",
-                value=f"{reminder_dt.strftime(rm_const.REMINDER_DT_MESSAGE_FORMAT)}",
-            )
-            .add_field(
-                name="Erstellt von:",
-                value=f"{ctx.author.name}#{ctx.author.discriminator}",
-            )
+        embed = self.create_reminder_embed(
+            reminder_msg, reminder_dt=reminder_dt, author=ctx.author
         )
 
         is_public = ctx.channel is not discord.DMChannel
@@ -100,10 +89,55 @@ class RemindMeCog(commands.Cog):
             )
 
         sent_message = await ctx.reply(embed=embed)
-        await self.schedule_reminder(ctx, reminder_dt, reminder_msg, sent_message)
+        reminder_uuid = uuid.uuid4()
 
-        if is_public:
-            await sent_message.add_reaction(rm_const.REMINDER_EMOJI)
+        try:
+            self._db_connector.add_reminder_job(
+                reminder_uuid,
+                reminder_dt,
+                reminder_msg,
+                sent_message.id,
+                ctx.channel.id,
+                ctx.author.id,
+            )
+
+            self._db_connector.add_reminder_for_user(reminder_uuid, ctx.author.id)
+
+            singletons.SCHEDULER.add_job(
+                _scheduled_reminder,
+                trigger="date",
+                run_date=reminder_dt,
+                args=[reminder_uuid],
+                id=str(reminder_uuid),
+                replace_existing=True,
+            )
+
+            log.info(
+                "[REMINDME] %s#%s (%s) created a new reminder: [%s] (%s) Message: %s",
+                ctx.author.name,
+                ctx.author.discriminator,
+                ctx.author.id,
+                reminder_uuid,
+                reminder_dt.strftime(rm_const.REMINDER_DT_FORMAT),
+                reminder_msg,
+            )
+
+        except Exception:
+            self._db_connector.remove_reminder_job(reminder_uuid)
+            await sent_message.delete()
+            await ctx.send(
+                embed=discord.Embed(
+                    title="Fehler",
+                    description="Etwas ist beim Erstellen der Erinnerung "
+                    "schief gelaufen.",
+                    colour=constants.EMBED_COLOR_WARNING,
+                ),
+                delete_after=60,
+            )
+
+        else:
+            if is_public:
+                await sent_message.add_reaction(rm_const.REMINDER_EMOJI)
 
     @remindme.command(name="help")  # use class HelpCommand (?)
     @command_log
@@ -147,7 +181,7 @@ class RemindMeCog(commands.Cog):
                 The message may be an empty string if the user did not specify any.
 
         Raises:
-            ReminderParseError: If an error happens during the parsing process.
+            parser.ReminderParseError: If an error happens during the parsing process.
         """
         loop = asyncio.get_running_loop()
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
@@ -158,86 +192,179 @@ class RemindMeCog(commands.Cog):
 
         return result
 
-    async def schedule_reminder(
-        self,
-        ctx: commands.Context,
-        reminder_dt: datetime.datetime,
-        reminder_msg: str,
-        bot_msg: discord.Message,
-    ):
-        """
-        Launches a new thread that schedules the reminder in the background,
-        running an otherwise blocking call as a coroutine.
+    @staticmethod
+    async def create_reminder_embed_from_job(
+        job: tuple,
+        title: str = f"Erinnerung {rm_const.REMINDER_EMOJI}",
+        *,
+        with_dt=False,
+    ) -> discord.Embed:
+        """Does what it says on the tin.
+
+        Wrapper for :py:meth:`create_reminder_embed`.
 
         Args:
-            ctx (commands.Context): The invocation context of the command
-                this method was used in.
-            reminder_dt (datetime.datetime): The date and time at which the
-                reminder should be sent.
-            reminder_msg (str): The reminder's message.
-            bot_msg (discord.Message): The *discord.Message* the bot had posted.
+            job (tuple): The reminder job fetched from the database.
+            title (str): A title for the reminder's embed.
+            with_dt (bool): Whether to add the reminder's time to the embed or not.
+
+        Returns:
+            discord.Embed: The reminder's embed.
         """
-        loop = asyncio.get_running_loop()
-        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-            await loop.run_in_executor(
-                executor=executor,
-                func=functools.partial(
-                    self._schedule_reminder, ctx, reminder_dt, reminder_msg, bot_msg
-                ),
+        reminder_dt = job[1]
+        reminder_msg = job[2]
+
+        try:
+            channel: discord.TextChannel = RemindMeCog.guild.get_channel(job[4])
+            message = await channel.fetch_message(job[3]) if channel else None
+        except (discord.NotFound, discord.Forbidden, discord.HTTPException):
+            message = None
+
+        author = RemindMeCog.guild.get_member(job[5])
+
+        return RemindMeCog.create_reminder_embed(
+            reminder_msg,
+            reminder_dt=reminder_dt if with_dt else None,
+            title=title,
+            message=message,
+            author=author,
+        )
+
+    @staticmethod
+    def create_reminder_embed(
+        reminder_msg: str,
+        *,
+        reminder_dt: Optional[datetime.datetime] = None,
+        title: str = f"Erinnerung {rm_const.REMINDER_EMOJI}",
+        message: Optional[discord.Message] = None,
+        author: Optional[discord.User] = None,
+    ) -> discord.Embed:
+        """Helper method that creates a reminder's embed.
+
+        Args:
+            reminder_dt (datetime.datetime): The reminder's datetime.
+            reminder_msg (str): The reminder's message.
+            title (str): The title to set for the embed.
+            message (Optional[discord.Message]): Optional discord message
+                that is linked in the reminder's message.
+            author (Optional[discord.User]): Optional user to display as author
+                in the embed's footer.
+
+        Returns:
+            discord.Embed: The reminder's embed.
+        """
+        embed = discord.Embed(
+            title=title,
+            description=reminder_msg,
+            colour=constants.EMBED_COLOR_INFO,
+        )
+
+        if reminder_dt is not None:
+            embed.add_field(
+                name="Wann:",
+                value=f"{reminder_dt.strftime(rm_const.REMINDER_DT_MESSAGE_FORMAT)}",
+            )
+        if message is not None and isinstance(message, discord.Message):
+            embed.description += f"\n\n[Originale Nachricht]({message.jump_url})"
+
+        if author is not None and isinstance(author, discord.User):
+            embed.add_field(
+                name="Erstellt von:",
+                value=f"{author.name}#{author.discriminator}",
             )
 
-    def _schedule_reminder(
-        self,
-        ctx: commands.Context,
-        reminder_dt: datetime.datetime,
-        reminder_msg: str,
-        bot_msg: discord.Message,
-    ):
-        """
-        The blocking function that is used in :func:`schedule_reminder`.
+        return embed
 
-        This function was separately added in order to ensure that every
-        call happens sequentially instead of running every method individually
-        in the *ThreadPoolExecutor*.
+    def fetch_reminders(
+        self, ctx: commands.Context, is_moderator: Optional[bool] = None
+    ) -> list[tuple]:
+        """Helper method that fetches reminders in a consistent manner.
+
+        Moderators can view all jobs, but only if they're issuing the command
+        on the server.
 
         Args:
-            ctx (commands.Context): The invocation context of the command
-                this method was used in.
-            reminder_dt (datetime.datetime): The date and time at which the
-                reminder should be sent.
-            reminder_msg (str): The reminder's message.
-            bot_msg (discord.Message): The *discord.Message* the bot had posted.
+            ctx (commands.Context): The command's invocation context.
+            is_moderator (Optional[bool]): Whether a moderator is fetching
+                reminder jobs or not. Checks whether the context's author is
+                a moderator if not supplied.
+
         """
-        reminder_uuid = uuid.uuid4()
+        if is_moderator is None:
+            if isinstance(ctx.channel, discord.DMChannel):
+                is_moderator = False
+            else:
+                is_moderator = bool(
+                    discord.utils.get(
+                        ctx.author.roles, id=int(constants.ROLE_ID_MODERATOR)
+                    )
+                )
 
-        self._db_connector.add_reminder_job(
-            reminder_uuid, reminder_dt, reminder_msg, bot_msg.id
+        # Moderators can view all jobs if they're on the server
+        if is_moderator and not isinstance(ctx.channel, discord.DMChannel):
+            return list(self._db_connector.get_reminder_jobs())
+
+        else:
+            return list(self._db_connector.get_reminder_jobs_for_user(ctx.author.id))
+
+    async def fetch_reminder_job_via_id(
+        self, ctx: commands.Context, id_: Union[int, str]
+    ) -> Optional[tuple]:
+        """Helper method that fetches a reminder job via its list index or UUID.
+
+        Args:
+            ctx (commands.Context): The command's invocation context.
+            id_ (Union[int, str]): Either the reminder's list index or UUID.
+
+        Returns:
+            Optional[tuple]: The reminder job if found or None.
+
+        Raises:
+            ValueError: If ``id_`` is neither ``int`` or ``uuid.UUID``.
+        """
+        print(id_, type(id_))
+        if isinstance(id_, int):
+            reminder_jobs = self.fetch_reminders(ctx)
+            if not reminder_jobs or not id_ <= len(reminder_jobs):
+                return
+
+            return reminder_jobs[id_ - 1]
+
+        elif isinstance(id_, str):
+            try:
+                id_ = uuid.UUID(id_)
+            except Exception:
+                raise ValueError("Reminder ID is neither an index or a UUID")
+
+            reminder_jobs = list(self._db_connector.get_reminder_jobs([id_]))
+            if not reminder_jobs:
+                return
+
+            return reminder_jobs[0]
+
+        else:
+            raise ValueError("Reminder ID is neither an index or a UUID")
+
+    @staticmethod
+    async def handle_no_jobs_found(ctx: commands.Context):
+        await ctx.send(
+            embed=discord.Embed(
+                description="Es konnten keine Erinnerungen gefunden werden.",
+                color=constants.EMBED_COLOR_INFO,
+            ),
+            delete_after=None if isinstance(ctx.channel, discord.DMChannel) else 60,
         )
-        self._db_connector.add_reminder_for_user(reminder_uuid, ctx.author.id)
+        await ctx.message.delete(delay=60)
 
-        reminder_embed = discord.Embed(
-            title="Erinnerung :calendar_spiral:",
-            description=reminder_msg + f"\n\n[Originale Nachricht]({bot_msg.jump_url})",
-            color=constants.EMBED_COLOR_INFO,
-        ).set_footer(text=f"Erstellt von {ctx.author.name}#{ctx.author.discriminator}")
-
-        singletons.SCHEDULER.add_job(
-            _scheduled_reminder,
-            trigger="date",
-            run_date=reminder_dt,
-            args=[reminder_uuid, reminder_embed],
-            id=str(reminder_uuid),
-            replace_existing=True,
-        )
-
-        log.info(
-            "[REMINDME] %s#%s (%s) created a new reminder: [%s] (%s) Message: %s",
-            ctx.author.name,
-            ctx.author.discriminator,
-            ctx.author.id,
-            reminder_uuid,
-            reminder_dt.strftime(rm_const.REMINDER_DT_FORMAT),
-            reminder_msg,
+    @staticmethod
+    async def handle_no_job_with_id_found(ctx: commands.Context):
+        await ctx.send(
+            embed=discord.Embed(
+                title="Fehler",
+                description="Es konnte keine Erinnerung mit dieser ID "
+                "gefunden werden.",
+            ),
+            delete_after=60,
         )
 
     @remindme.error
@@ -281,21 +408,24 @@ class RemindMeCog(commands.Cog):
                 self._db_connector.add_reminder_for_user(job[0], payload.user_id)
 
 
-async def _scheduled_reminder(reminder_id: uuid.UUID, embed: discord.Embed):
+async def _scheduled_reminder(reminder_id: uuid.UUID):
     """
     Schedules a reminder message to be sent to its users.
 
     Args:
         reminder_id (uuid.UUID): The reminder's UUID.
-        embed (discord.Embed): The embed for the reminder's message.
     """
     log.info(f"[REMINDME] Sending reminder [%s]", reminder_id)
 
-    if not any(RemindMeCog.db_connector.get_reminder_jobs([reminder_id])):
+    reminder_jobs = list(RemindMeCog.db_connector.get_reminder_jobs([reminder_id]))
+    if not any(reminder_jobs):
         log.warning("[REMINDME] Reminder does not exist in database anymore. Skipping.")
         return
 
-    guild: discord.Guild = RemindMeCog.bot.get_guild(int(constants.SERVER_ID))
+    embed = await RemindMeCog.create_reminder_embed_from_job(
+        reminder_jobs[0], with_dt=False
+    )
+    guild: discord.Guild = RemindMeCog.guild
 
     to_remove: list[tuple[uuid.UUID, int]] = []
 
@@ -350,13 +480,13 @@ async def _scheduled_reminder_vacuum():
             RemindMeCog.db_connector.remove_reminder_for_user(reminder_id, user_id)
 
     reminder_jobs = RemindMeCog.db_connector.get_reminder_jobs()
-    for reminder_id, reminder_dt, reminder_msg in reminder_jobs:
-        if not singletons.SCHEDULER.get_job(str(reminder_id), "default"):
+    for job in reminder_jobs:
+        if not singletons.SCHEDULER.get_job(str(job[0]), "default"):
             log.info(
                 "[REMINDME] Vacuuming dangling reminder job [%s] without scheduled job",
-                reminder_id,
+                job[0],
             )
-            RemindMeCog.db_connector.remove_reminder_job(reminder_id)
+            RemindMeCog.db_connector.remove_reminder_job(job[0])
 
     log.info("[REMINDME] Finished vacuum job.")
 
