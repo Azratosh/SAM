@@ -741,6 +741,9 @@ class RemindMeCog(commands.Cog):
 
     @commands.Cog.listener(name="on_raw_reaction_add")
     async def reminder_on_reaction_add(self, payload: discord.RawReactionActionEvent):
+        if not payload.emoji or not payload.user_id:
+            return
+
         if (
             payload.emoji.name == rm_const.REMINDER_EMOJI
             and payload.user_id != self.bot.user.id
