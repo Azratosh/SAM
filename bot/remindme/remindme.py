@@ -227,6 +227,11 @@ class RemindMeCog(commands.Cog):
             reminder_msg, reminder_dt=reminder_dt, title=title, author=self.bot.user
         )
 
+        embed.set_footer(
+            text=f"Klicke auf {rm_const.REMINDER_EMOJI} um diese "
+            "Erinnerung ebenfalls zu erhalten.",
+        )
+
         sent_message = await channel.send(embed=embed)
         reminder_uuid = uuid.uuid4()
 
