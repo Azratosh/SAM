@@ -73,6 +73,7 @@ class RemindMeCog(commands.Cog):
         """
         if reminder_spec is None:
             await self.remindme_help(ctx)
+            await ctx.message.delete(delay=60)
             return
 
         if (
@@ -368,17 +369,19 @@ class RemindMeCog(commands.Cog):
                         embed = current_embed.copy().set_footer(
                             text="Diese Nachricht ist nun inaktiv."
                         )
+                        await ctx.message.delete()
                         await message.edit(embed=embed)
+
                     else:
                         await ctx.message.delete()
                         await message.delete()
                     break
 
         else:
-            await ctx.send(
-                embed=pages[0],
-                delete_after=None if isinstance(ctx.channel, discord.DMChannel) else 60,
-            )
+            message = await ctx.send(embed=pages[0])
+            if not (is_moderator or isinstance(ctx.channel, discord.DMChannel)):
+                await message.delete(delay=60)
+            await ctx.message.delete(60)
 
     @remindme.command(name="view")
     @command_log
@@ -393,13 +396,19 @@ class RemindMeCog(commands.Cog):
             job = await self.fetch_reminder_job_via_id(ctx, id_)
         except ValueError:
             await ctx.send(
-                embed=discord.Embed(title="Fehler", description="Ungültige ID.")
+                embed=discord.Embed(title="Fehler", description="Ungültige ID."),
+                delete_after=60,
             )
         else:
             if job is None:
                 await self.handle_no_job_with_id_found(ctx)
             else:
-                await ctx.send(embed=await self.create_reminder_embed_from_job(job))
+                await ctx.send(
+                    embed=await self.create_reminder_embed_from_job(job),
+                    delete_after=60,
+                )
+
+        await ctx.message.delete(60)
 
     @remindme.command(name="delete", aliases=("remove", "rm"))
     @command_log
@@ -416,7 +425,9 @@ class RemindMeCog(commands.Cog):
             job = await self.fetch_reminder_job_via_id(ctx, id_)
         except ValueError:
             await ctx.send(
-                embed=discord.Embed(title="Fehler", description="Ungültige ID.")
+                embed=discord.Embed(
+                    title="Fehler", description="Ungültige ID."
+                ), delete_after=60
             )
         else:
             if job is None:
@@ -428,8 +439,10 @@ class RemindMeCog(commands.Cog):
                     embed=discord.Embed(
                         description="Die Erinnerung wurde erfolgreich gelöscht.",
                         colour=constants.EMBED_COLOR_INFO,
-                    )
+                    ), delete_after=60,
                 )
+
+        await ctx.message.delete(delay=60)
 
     @remindme.command(name="purge")
     @commands.has_role(int(constants.ROLE_ID_MODERATOR))
@@ -445,7 +458,8 @@ class RemindMeCog(commands.Cog):
             job = await self.fetch_reminder_job_via_id(ctx, id_)
         except ValueError:
             await ctx.send(
-                embed=discord.Embed(title="Fehler", description="Ungültige ID.")
+                embed=discord.Embed(title="Fehler", description="Ungültige ID."),
+                delete_after=60,
             )
         else:
             if job is None:
@@ -458,8 +472,11 @@ class RemindMeCog(commands.Cog):
                         description=f"Die Erinnerung mit UUID `{job[0]}` wurde "
                         f"erfolgreich von der Datenbank enfernt.",
                         color=constants.EMBED_COLOR_MODLOG_PURGE,
-                    )
+                    ),
+                    delete_after=60,
                 )
+
+        await ctx.message.delete(delay=60)
 
     async def parse_reminder(self, reminder_spec: str) -> tuple[datetime.datetime, str]:
         """
@@ -654,7 +671,7 @@ class RemindMeCog(commands.Cog):
                 description="Es konnten keine Erinnerungen gefunden werden.",
                 color=constants.EMBED_COLOR_INFO,
             ),
-            delete_after=None if isinstance(ctx.channel, discord.DMChannel) else 60,
+            delete_after=60,
         )
         await ctx.message.delete(delay=60)
 
