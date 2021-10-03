@@ -150,17 +150,7 @@ class RemindMeCog(commands.Cog):
             )
 
         except Exception:
-            self._db_connector.remove_reminder_job(reminder_uuid)
-            await sent_message.delete()
-            await ctx.send(
-                embed=discord.Embed(
-                    title="Fehler",
-                    description="Etwas ist beim Erstellen der Erinnerung "
-                    "schief gelaufen.",
-                    colour=constants.EMBED_COLOR_WARNING,
-                ),
-                delete_after=60,
-            )
+            await self.handle_reminder_creation_error(ctx, reminder_uuid, sent_message)
 
         else:
             if is_public:
@@ -260,16 +250,7 @@ class RemindMeCog(commands.Cog):
             )
 
         except Exception:
-            self._db_connector.remove_reminder_job(reminder_uuid)
-            await sent_message.delete()
-            await ctx.send(
-                embed=discord.Embed(
-                    title="Fehler",
-                    description="Etwas ist beim Erstellen der System-Erinnerung "
-                    "schief gelaufen.",
-                    colour=constants.EMBED_COLOR_WARNING,
-                )
-            )
+            await self.handle_reminder_creation_error(ctx, reminder_uuid, sent_message)
 
         else:
             await sent_message.add_reaction(rm_const.REMINDER_EMOJI)
@@ -635,6 +616,28 @@ class RemindMeCog(commands.Cog):
 
         else:
             raise ValueError("Reminder ID is neither an index or a UUID")
+
+    async def handle_reminder_creation_error(self, ctx, reminder_uuid: uuid.UUID, message: discord.Message):
+        log.exception(
+            "[REMINDME][ERROR] Unexpected exception occurred during creation of a reminder",
+        )
+
+        try:
+            self._db_connector.remove_reminder_job(reminder_uuid)
+        except Exception:
+            log.exception(
+                "[REMINDME][ERROR] While handling the previous exception, another exception occurred"
+            )
+
+        await message.delete()
+        await ctx.send(
+            embed=discord.Embed(
+                title="Fehler",
+                description="Beim Erstellen der Erinnerung ist etwas schief gegangen.",
+                colour=constants.EMBED_COLOR_WARNING,
+            ),
+            delete_after=60,
+        )
 
     @staticmethod
     async def handle_no_jobs_found(ctx: commands.Context):
