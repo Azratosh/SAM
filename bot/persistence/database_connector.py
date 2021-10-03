@@ -252,6 +252,14 @@ class DatabaseConnector:
             int(row[5]),
         )
 
+    def get_reminder_job_count_for_author(self, author_id: int) -> int:
+        with DatabaseManager(self._db_file) as db_manager:
+            result = db_manager.execute(
+                queries.GET_REMINDER_JOB_COUNT_FOR_AUTHOR, (author_id,)
+            )
+            row = result.fetchone()
+            return row[0] if row else 0
+
     def add_reminder_for_user(self, job_id: uuid.UUID, user_id: int):
         """
         Adds a reminder for a user to the table *RemindmeUserReminders*.
