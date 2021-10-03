@@ -436,6 +436,18 @@ class RemindMeCog(commands.Cog):
                 await self.handle_no_job_with_id_found(ctx)
             else:
                 self._db_connector.remove_reminder_for_user(job[0], ctx.author.id)
+
+                log.info(
+                    "[REMINDME] %s#%s (%s) removed a reminder from themselves: [%s] (%s) by %s - Message:\n%s",
+                    ctx.author.name,
+                    ctx.author.discriminator,
+                    ctx.author.id,
+                    job[0],
+                    job[1],
+                    job[5],
+                    job[2],
+                )
+
                 await ctx.send(
                     embed=discord.Embed(
                         description="Die Erinnerung wurde erfolgreich gelöscht.",
@@ -470,6 +482,18 @@ class RemindMeCog(commands.Cog):
                 await self.handle_no_job_with_id_found(ctx)
             else:
                 self._db_connector.remove_reminder_job(job[0])
+
+                log.info(
+                    "[REMINDME] %s#%s (%s) purged a reminder from the database: [%s] (%s) by %s - Message:\n%s",
+                    ctx.author.name,
+                    ctx.author.discriminator,
+                    ctx.author.id,
+                    job[0],
+                    job[1],
+                    job[5],
+                    job[2],
+                )
+
                 await ctx.send(
                     embed=discord.Embed(
                         description=f"Die Erinnerung mit UUID `{job[0]}` wurde "
