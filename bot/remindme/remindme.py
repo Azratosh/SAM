@@ -310,8 +310,9 @@ class RemindMeCog(commands.Cog):
                 )
 
             current_page = 0
+            current_embed = pages[current_page]
 
-            message = await ctx.send(embed=pages[current_page])
+            message = await ctx.send(embed=current_embed)
             await message.add_reaction(constants.EMOJI_ARROW_BACKWARD)
             await message.add_reaction(constants.EMOJI_ARROW_FORWARD)
 
@@ -327,7 +328,8 @@ class RemindMeCog(commands.Cog):
                         and current_page < len(pages) - 1
                     ):
                         current_page += 1
-                        await message.edit(embed=pages[current_page])
+                        current_embed = pages[current_page]
+                        await message.edit(embed=current_embed)
                         if not isinstance(ctx.channel, discord.DMChannel):
                             await message.remove_reaction(reaction, user)
 
@@ -336,7 +338,8 @@ class RemindMeCog(commands.Cog):
                         and current_page > 0
                     ):
                         current_page -= 1
-                        await message.edit(embed=pages[current_page])
+                        current_embed = pages[current_page]
+                        await message.edit(embed=current_embed)
                         if not isinstance(ctx.channel, discord.DMChannel):
                             await message.remove_reaction(reaction, user)
 
@@ -346,11 +349,10 @@ class RemindMeCog(commands.Cog):
 
                 except asyncio.TimeoutError:
                     if is_moderator or isinstance(ctx.channel, discord.DMChannel):
-                        embed = pages[current_page].set_footer(
+                        embed = current_embed.copy().set_footer(
                             text="Diese Nachricht ist nun inaktiv."
                         )
                         await message.edit(embed=embed)
-                        await message.clear_reactions()
                     else:
                         await ctx.message.delete()
                         await message.delete()
