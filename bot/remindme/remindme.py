@@ -388,7 +388,7 @@ class RemindMeCog(commands.Cog):
             message = await ctx.send(embed=pages[0])
             if not (is_moderator or isinstance(ctx.channel, discord.DMChannel)):
                 await message.delete(delay=60)
-            await ctx.message.delete(60)
+            await ctx.message.delete(delay=60)
 
     @remindme.command(name="view")
     @command_log
@@ -419,7 +419,7 @@ class RemindMeCog(commands.Cog):
                     delete_after=60,
                 )
 
-        await ctx.message.delete(60)
+        await ctx.message.delete(delay=60)
 
     @remindme.command(name="delete", aliases=("remove", "rm"))
     @command_log
