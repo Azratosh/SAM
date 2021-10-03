@@ -333,7 +333,6 @@ class RemindMeCog(commands.Cog):
             await message.add_reaction(constants.EMOJI_ARROW_BACKWARD)
             await message.add_reaction(constants.EMOJI_ARROW_FORWARD)
 
-            # TODO: better browsing in DMs
             while True:
                 try:
                     reaction, user = await self.bot.wait_for(
@@ -394,11 +393,13 @@ class RemindMeCog(commands.Cog):
         """
         try:
             job = await self.fetch_reminder_job_via_id(ctx, id_)
+
         except ValueError:
             await ctx.send(
                 embed=discord.Embed(title="Fehler", description="Ungültige ID."),
                 delete_after=60,
             )
+
         else:
             if job is None:
                 await self.handle_no_job_with_id_found(ctx)
@@ -423,23 +424,24 @@ class RemindMeCog(commands.Cog):
         """
         try:
             job = await self.fetch_reminder_job_via_id(ctx, id_)
+
         except ValueError:
             await ctx.send(
-                embed=discord.Embed(
-                    title="Fehler", description="Ungültige ID."
-                ), delete_after=60
+                embed=discord.Embed(title="Fehler", description="Ungültige ID."),
+                delete_after=60,
             )
+
         else:
             if job is None:
                 await self.handle_no_job_with_id_found(ctx)
             else:
-                # TODO: Confirmation
                 self._db_connector.remove_reminder_for_user(job[0], ctx.author.id)
                 await ctx.send(
                     embed=discord.Embed(
                         description="Die Erinnerung wurde erfolgreich gelöscht.",
                         colour=constants.EMBED_COLOR_INFO,
-                    ), delete_after=60,
+                    ),
+                    delete_after=60,
                 )
 
         await ctx.message.delete(delay=60)
@@ -456,21 +458,22 @@ class RemindMeCog(commands.Cog):
         """
         try:
             job = await self.fetch_reminder_job_via_id(ctx, id_)
+
         except ValueError:
             await ctx.send(
                 embed=discord.Embed(title="Fehler", description="Ungültige ID."),
                 delete_after=60,
             )
+
         else:
             if job is None:
                 await self.handle_no_job_with_id_found(ctx)
             else:
-                # TODO: Confirmation
                 self._db_connector.remove_reminder_job(job[0])
                 await ctx.send(
                     embed=discord.Embed(
                         description=f"Die Erinnerung mit UUID `{job[0]}` wurde "
-                        f"erfolgreich von der Datenbank enfernt.",
+                        "erfolgreich von der Datenbank enfernt.",
                         color=constants.EMBED_COLOR_MODLOG_PURGE,
                     ),
                     delete_after=60,
@@ -619,7 +622,6 @@ class RemindMeCog(commands.Cog):
         Raises:
             ValueError: If ``id_`` is neither ``int`` or ``uuid.UUID``.
         """
-        print(id_, type(id_))
         if isinstance(id_, int):
             reminder_jobs = self.fetch_reminders(ctx)
             if not reminder_jobs or not id_ <= len(reminder_jobs):
@@ -642,7 +644,9 @@ class RemindMeCog(commands.Cog):
         else:
             raise ValueError("Reminder ID is neither an index or a UUID")
 
-    async def handle_reminder_creation_error(self, ctx, reminder_uuid: uuid.UUID, message: discord.Message):
+    async def handle_reminder_creation_error(
+        self, ctx, reminder_uuid: uuid.UUID, message: discord.Message
+    ):
         log.exception(
             "[REMINDME][ERROR] Unexpected exception occurred during creation of a reminder",
         )
