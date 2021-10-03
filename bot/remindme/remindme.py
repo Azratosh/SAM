@@ -239,9 +239,9 @@ class RemindMeCog(commands.Cog):
             self._db_connector.add_reminder_job(
                 reminder_uuid,
                 reminder_dt,
-                reminder_msg,
+                f"**__{title}__**\n{reminder_msg}",
                 sent_message.id,
-                ctx.channel.id,
+                sent_message.channel.id,
                 self.bot.user.id,
             )
 
@@ -261,7 +261,7 @@ class RemindMeCog(commands.Cog):
                 ctx.author.id,
                 reminder_uuid,
                 reminder_dt.strftime(rm_const.REMINDER_DT_FORMAT),
-                reminder_msg,
+                f"{title}: {reminder_msg}",
             )
 
         except Exception:
@@ -839,7 +839,7 @@ async def _scheduled_reminder(reminder_id: uuid.UUID):
         return
 
     embed = await RemindMeCog.create_reminder_embed_from_job(
-        reminder_jobs[0], with_dt=False
+        reminder_jobs[0], with_dt=True
     )
     guild: discord.Guild = RemindMeCog.guild
 
