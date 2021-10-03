@@ -96,6 +96,9 @@ GET_REMINDER_JOBS_CONDITIONAL = "SELECT JobID, Timestamp, Message, MessageID, Ch
                                 "WHERE JobID IN ({0}) " \
                                 "ORDER BY Timestamp ASC"
 
+GET_REMINDER_JOB_COUNT_FOR_AUTHOR = "SELECT COUNT(*) FROM RemindmeJobs " \
+                                    "WHERE AuthorID = ?"
+
 INSERT_REMINDER_FOR_USER = "INSERT OR IGNORE INTO RemindmeUserReminders (JobID, UserID) VALUES (?, ?)"
 REMOVE_REMINDER_FOR_USER = "DELETE FROM RemindmeUserReminders WHERE JobID = ? AND UserID = ?"
 GET_REMINDERS_FOR_USER = "SELECT JobID, UserID FROM RemindmeUserReminders"
