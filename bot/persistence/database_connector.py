@@ -146,8 +146,7 @@ class DatabaseConnector:
         channel_id: int,
         author_id: int,
     ):
-        """
-        Adds a new reminder job to the table *RemindmeJobs*.
+        """Adds a new reminder job to the table *RemindmeJobs*.
 
         Whenever a record is added, a corresponding job should be added to the
         scheduler.
@@ -166,13 +165,19 @@ class DatabaseConnector:
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(
                 queries.INSERT_REMINDER_JOB,
-                (str(job_id), str(timestamp), message, message_id, channel_id, author_id),
+                (
+                    str(job_id),
+                    str(timestamp),
+                    message,
+                    message_id,
+                    channel_id,
+                    author_id,
+                ),
             )
             db_manager.commit()
 
     def remove_reminder_job(self, job_id: uuid.UUID):
-        """
-        Removes a reminder job from the table *RemindmeJobs*.
+        """Removes a reminder job from the table *RemindmeJobs*.
 
         Whenever a record is deleted, the scheduler's corresponding job should
         also be removed.
@@ -188,8 +193,7 @@ class DatabaseConnector:
     def get_reminder_jobs(
         self, job_ids: Optional[list[uuid.UUID]] = None
     ) -> Generator[tuple, None, None]:
-        """
-        Fetches the specified jobs from the table *RemindmeJobs*. If no jobs
+        """Fetches the specified jobs from the table *RemindmeJobs*. If no jobs
         are specified, fetches all jobs.
 
         Args:
@@ -216,10 +220,16 @@ class DatabaseConnector:
 
     def get_reminder_job_from_message_id(
         self, message_id: int
-    ) -> Optional[tuple[uuid.UUID, datetime.datetime, str, int]]:
-        """
-        Fetches the reminder job associated with a *discord.Message* from the
+    ) -> Optional[tuple[uuid.UUID, datetime.datetime, str, int, int, int]]:
+        """Fetches the reminder job associated with a *discord.Message* from the
         table *RemindmeJobs*. If no job was found, ``None`` is returned.
+
+        Args:
+            message_id (int): The reminder's message ID.
+
+        Returns:
+            Optional[tuple[uuid.UUID, datetime.datetime, str, int, int, int]:
+                A reminder job record.
         """
         with DatabaseManager(self._db_file) as db_manager:
             result = db_manager.execute(
@@ -232,8 +242,7 @@ class DatabaseConnector:
     def _convert_reminder_job_row_from_db(
         row: tuple[str, str, str, str]
     ) -> tuple[uuid.UUID, datetime.datetime, str, int, int, int]:
-        """
-        Converts a row fetched from the *RemindmeJobs* table into proper Python
+        """Converts a row fetched from the *RemindmeJobs* table into proper Python
         types and objects.
 
         Args:
@@ -241,7 +250,7 @@ class DatabaseConnector:
 
         Returns:
             tuple[uuid.UUID, datetime.datetime, str, int, int, int]:
-                A tuple containing the converted data.
+                A tuple containing the converted data of the reminder job record.
         """
         return (
             uuid.UUID(row[0]),
@@ -253,6 +262,14 @@ class DatabaseConnector:
         )
 
     def get_reminder_job_count_for_author(self, author_id: int) -> int:
+        """Gets the number of jobs created by a given discord user's ID.
+
+        Args:
+            author_id (int): An ID of a discord user.
+
+        Returns:
+            int: The number of reminder jobs the user has created.
+        """
         with DatabaseManager(self._db_file) as db_manager:
             result = db_manager.execute(
                 queries.GET_REMINDER_JOB_COUNT_FOR_AUTHOR, (author_id,)
@@ -261,8 +278,7 @@ class DatabaseConnector:
             return row[0] if row else 0
 
     def add_reminder_for_user(self, job_id: uuid.UUID, user_id: int):
-        """
-        Adds a reminder for a user to the table *RemindmeUserReminders*.
+        """Adds a reminder for a user to the table *RemindmeUserReminders*.
 
         One must ensure that the reminder job already exists in the `RemindmeJobs`
         table.
@@ -276,8 +292,7 @@ class DatabaseConnector:
             db_manager.commit()
 
     def remove_reminder_for_user(self, job_id: uuid.UUID, user_id: int):
-        """
-        Removes a reminder for a user from the table *RemindmeUserReminders*.
+        """Removes a reminder for a user from the table *RemindmeUserReminders*.
 
         Args:
             job_id (uuid.UUID): The UUID of the job.
@@ -289,9 +304,8 @@ class DatabaseConnector:
 
     def get_reminders_for_users(
         self, user_ids: Optional[list[int]] = None
-    ) -> Generator[tuple, None, None]:
-        """
-        Fetches all reminders set for the given user IDs from the table
+    ) -> Generator[tuple[uuid.UUID, int], None, None]:
+        """Fetches all reminders set for the given user IDs from the table
         *RemindmeUserReminders*.
 
         Args:
@@ -317,8 +331,7 @@ class DatabaseConnector:
     def remove_many_reminder_for_user(
         self, job_user_tuples: list[tuple[uuid.UUID, int]]
     ):
-        """
-        Removes many reminders for many users from the table *RemindmeUserReminders*.
+        """Removes many reminders for many users from the table *RemindmeUserReminders*.
 
         Args:
             job_user_tuples (list[tuple[uuid.UUID, int]]):
@@ -335,8 +348,7 @@ class DatabaseConnector:
     def get_reminder_jobs_for_user(
         self, user_id: int
     ) -> Generator[tuple[uuid.UUID, datetime.datetime, str, int, int, int], None, None]:
-        """
-        Fetches all reminder jobs from table *RemindmeJobs* that are associated
+        """Fetches all reminder jobs from table *RemindmeJobs* that are associated
         with a user.
 
         Args:
@@ -354,12 +366,10 @@ class DatabaseConnector:
                 ).fetchall()
             )
 
-
     def get_users_for_reminder_job(
         self, job_id: uuid.UUID
     ) -> Generator[int, None, None]:
-        """
-        Fetches all user IDs from table *RemindmeUserReminders* that are associated
+        """Fetches all user IDs from table *RemindmeUserReminders* that are associated
         with a reminder job.
 
         Args:
