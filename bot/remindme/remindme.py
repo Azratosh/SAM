@@ -520,8 +520,7 @@ class RemindMeCog(commands.Cog):
         await ctx.message.delete(delay=60)
 
     async def parse_reminder(self, reminder_spec: str) -> tuple[datetime.datetime, str]:
-        """
-        Launches a new thread in order to parse the reminder's specification,
+        """Launches a new thread in order to parse the reminder's specification,
         running an otherwise blocking call as a coroutine.
 
         Args:
@@ -693,8 +692,22 @@ class RemindMeCog(commands.Cog):
             raise ValueError("Reminder ID is neither an index or a UUID")
 
     async def handle_reminder_creation_error(
-        self, ctx, reminder_uuid: uuid.UUID, message: discord.Message
+        self, ctx: commands.Context, reminder_uuid: uuid.UUID, message: discord.Message
     ):
+        """Handles exceptions that may occur when creating a reminder.
+
+        The handler attempts to remove the created reminder immediately from the
+        database if possible, while also deleting the reminder job's message and
+        posting an error message afterwards.
+
+        Args:
+            ctx (commands.Context):
+                The command's invocation context.
+            reminder_uuid (uuid.UUID):
+                The created reminder job's UUID.
+            message (discord.Message):
+                The message of the reminder job that was sent.
+        """
         log.exception(
             "[REMINDME][ERROR] Unexpected exception occurred during creation of a reminder",
         )
@@ -718,6 +731,14 @@ class RemindMeCog(commands.Cog):
 
     @staticmethod
     async def handle_no_jobs_found(ctx: commands.Context):
+        """Handles cases in which no reminder jobs are found.
+
+        Simply posts a message and deletes the author's original one.
+
+        Args:
+            ctx (commands.Context):
+                The command's invocation context.
+        """
         await ctx.send(
             embed=discord.Embed(
                 description="Es konnten keine Erinnerungen gefunden werden.",
@@ -729,6 +750,15 @@ class RemindMeCog(commands.Cog):
 
     @staticmethod
     async def handle_no_job_with_id_found(ctx: commands.Context):
+        """Handles cases in which no reminder job with the given index or UUID
+        is found.
+
+        Simply posts a message and deletes the author's original one.
+
+        Args:
+            ctx (commands.Context):
+                The command's invocation context.
+        """
         await ctx.send(
             embed=discord.Embed(
                 title="Fehler",
@@ -741,8 +771,7 @@ class RemindMeCog(commands.Cog):
 
     @remindme.error
     async def remindme_error(self, ctx: commands.Context, error):
-        """
-        Error handler for :obj:`parser.ReminderParseError` exceptions.
+        """Error handler for :obj:`parser.ReminderParseError` exceptions.
 
         Simply notifies the user about their mistake.
 
@@ -766,6 +795,12 @@ class RemindMeCog(commands.Cog):
 
     @commands.Cog.listener(name="on_raw_reaction_add")
     async def reminder_on_reaction_add(self, payload: discord.RawReactionActionEvent):
+        """Listens for reminder emoji reactions, adding a user to a reminder if found.
+
+        Args:
+            payload (discord.RawReactionActionEvent):
+                The payload emitted when a reaction is added or removed.
+        """
         if not payload.emoji or not payload.user_id:
             return
 
@@ -785,8 +820,7 @@ class RemindMeCog(commands.Cog):
 
 
 async def _scheduled_reminder(reminder_id: uuid.UUID):
-    """
-    Schedules a reminder message to be sent to its users.
+    """Schedules a reminder message to be sent to its users.
 
     Args:
         reminder_id (uuid.UUID):
