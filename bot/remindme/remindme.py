@@ -255,11 +255,9 @@ class RemindMeCog(commands.Cog):
         if isinstance(ctx.channel, discord.DMChannel):
             is_moderator = False
         else:
-            is_moderator = bool(
-                discord.utils.get(ctx.author.roles, id=int(constants.ROLE_ID_MODERATOR))
-            )
+            is_moderator = has_mod_role(ctx.author)
 
-        reminder_jobs = self.fetch_reminders(ctx, is_moderator)
+        reminder_jobs = self.fetch_reminders(ctx)
 
         if not reminder_jobs:
             await self.handle_no_jobs_found(ctx)
@@ -552,9 +550,7 @@ class RemindMeCog(commands.Cog):
 
         return embed
 
-    def fetch_reminders(
-        self, ctx: commands.Context, is_moderator: Optional[bool] = None
-    ) -> list[tuple]:
+    def fetch_reminders(self, ctx: commands.Context) -> list[tuple]:
         """Helper method that fetches reminders in a consistent manner.
 
         Moderators can view all jobs, but only if they're issuing the command
@@ -562,23 +558,12 @@ class RemindMeCog(commands.Cog):
 
         Args:
             ctx (commands.Context): The command's invocation context.
-            is_moderator (Optional[bool]): Whether a moderator is fetching
-                reminder jobs or not. Checks whether the context's author is
-                a moderator if not supplied.
 
+        Returns:
+            list[tuple]: A list of reminder job records.
         """
-        if is_moderator is None:
-            if isinstance(ctx.channel, discord.DMChannel):
-                is_moderator = False
-            else:
-                is_moderator = bool(
-                    discord.utils.get(
-                        ctx.author.roles, id=int(constants.ROLE_ID_MODERATOR)
-                    )
-                )
-
         # Moderators can view all jobs if they're on the server
-        if is_moderator and not isinstance(ctx.channel, discord.DMChannel):
+        if has_mod_role(ctx.author) and not isinstance(ctx.channel, discord.DMChannel):
             return list(self._db_connector.get_reminder_jobs())
 
         else:
@@ -767,6 +752,29 @@ async def _scheduled_reminder_vacuum():
             RemindMeCog.db_connector.remove_reminder_job(job[0])
 
     log.info("[REMINDME] Finished vacuum job.")
+
+
+# # # Utility Functions
+# Some of these functions may be moved to a different location, as they're not
+# necessarily bound to this cog.
+
+
+def has_mod_role(member: discord.Member):
+    """Checks whether a guild member has the moderator role.
+
+    If the supplied ``member`` is not an instance of ``discord.Member``,
+    ``False`` is consequently returned.
+
+    Args:
+        member (discord.Member): The member to check.
+
+    Returns:
+        bool: Whether the member is a moderator or not.
+    """
+    if not isinstance(member, discord.Member):
+        return False
+
+    return bool(discord.utils.get(member.roles, id=int(constants.ROLE_ID_MODERATOR)))
 
 
 def setup(bot):
