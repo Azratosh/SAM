@@ -76,6 +76,17 @@ class RemindMeCog(commands.Cog):
             return
 
         reminder_dt, reminder_msg = await self.parse_reminder(reminder_spec)
+        if not reminder_msg:
+            await ctx.send(
+                embed=discord.Embed(
+                    title="Fehler beim Erstellen der Erinnerung",
+                    description="Deine Erinnerung muss eine Nachricht beinhalten.",
+                    color=constants.EMBED_COLOR_WARNING,
+                ),
+                delete_after=60,
+            )
+            await ctx.message.delete(delay=60)
+            return
 
         embed = self.create_reminder_embed(
             reminder_msg, reminder_dt=reminder_dt, author=ctx.author

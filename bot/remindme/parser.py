@@ -122,8 +122,6 @@ def parse(
 
     if quoted_text and remaining_message:
         raise ReminderParseError(f"Unlesbares Argument gefunden: {remaining_message}")
-    elif not quoted_text and not remaining_message:
-        raise ReminderParseError("Deine Erinnerung muss eine Nachricht enthalten.")
 
     # 5: Ensure that date is incremented by one day if reminder is for next day
     if (
@@ -138,7 +136,7 @@ def parse(
         rm_const.REMINDER_DT_FORMAT,
     )
 
-    reminder_message = quoted_text or remaining_message
+    reminder_message = (quoted_text or remaining_message or "").strip()
 
     if len(reminder_message) > 1750:
         raise ReminderParseError(
