@@ -168,6 +168,7 @@ class RemindMeCog(commands.Cog):
         self,
         ctx: commands.Context,
         title: str,
+        reminder_msg: str,
         channel: Optional[discord.TextChannel] = None,
         *,
         reminder_spec: Optional[str] = None,
@@ -193,14 +194,14 @@ class RemindMeCog(commands.Cog):
         """
 
         if reminder_spec is None:
-            await ctx.message.delete()
+            await ctx.message.delete(delay=60)
             return
 
         if channel is None:
             channel = ctx.channel
 
         if not isinstance(channel, discord.TextChannel):
-            await ctx.message.delete()
+            await ctx.message.delete(delay=60)
             await ctx.send(
                 embed=discord.Embed(
                     title="Fehler",
@@ -211,7 +212,7 @@ class RemindMeCog(commands.Cog):
             )
             return
 
-        reminder_dt, reminder_msg = await self.parse_reminder(reminder_spec)
+        reminder_dt, _ = await self.parse_reminder(reminder_spec)
 
         embed = self.create_reminder_embed(
             reminder_msg, reminder_dt=reminder_dt, title=title, author=self.bot.user
@@ -227,7 +228,7 @@ class RemindMeCog(commands.Cog):
                 reminder_msg,
                 sent_message.id,
                 ctx.channel.id,
-                self.bot.user,
+                self.bot.user.id,
             )
 
             singletons.SCHEDULER.add_job(
