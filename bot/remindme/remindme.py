@@ -75,6 +75,22 @@ class RemindMeCog(commands.Cog):
             await self.remindme_help(ctx)
             return
 
+        if (
+            not has_mod_role(ctx.author)
+            and self._db_connector.get_reminder_job_count_for_author(ctx.author.id)
+            > rm_const.REMINDER_USER_CREATE_LIMIT
+        ):
+            await ctx.send(
+                embed=discord.Embed(
+                    description="Du kannst nicht mehr als "
+                    f"{rm_const.REMINDER_USER_CREATE_LIMIT} Erinnerungen erstellen.",
+                    color=constants.EMBED_COLOR_WARNING,
+                ),
+                delete_after=60,
+            )
+            await ctx.message.delete(delay=60)
+            return
+
         reminder_dt, reminder_msg = await self.parse_reminder(reminder_spec)
         if not reminder_msg:
             await ctx.send(
