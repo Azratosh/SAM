@@ -23,8 +23,8 @@ class RemindMeCog(commands.Cog):
             * Link reminder specification in !remindme help message
 
         Args:
-            bot (discord.ext.commands.Bot): The bot for which this cog should
-                be enabled.
+            bot (discord.ext.commands.Bot):
+                The bot for which this cog should be enabled.
         """
         self.bot: commands.Bot = bot
         self._db_connector = DatabaseConnector(
@@ -66,9 +66,10 @@ class RemindMeCog(commands.Cog):
         subsequently called.
 
         Args:
-            ctx (commands.Context): The command's invocation context.
-            reminder_spec (Optional[str]): The reminder's specification that
-                should be parsed.
+            ctx (commands.Context):
+                The command's invocation context.
+            reminder_spec (Optional[str]):
+                The reminder's specification that should be parsed.
 
         """
         if reminder_spec is None:
@@ -267,7 +268,14 @@ class RemindMeCog(commands.Cog):
     @remindme.command(name="list", aliases=("ls",))
     @command_log
     async def remindme_list(self, ctx: commands.Context):
-        """List available reminders."""
+        """List available reminders.
+
+        Moderators are able to see all reminders, including their author and UUID.
+
+        Args:
+            ctx (commands.Context):
+                The command's invocation context.
+        """
 
         if isinstance(ctx.channel, discord.DMChannel):
             is_moderator = False
@@ -388,8 +396,10 @@ class RemindMeCog(commands.Cog):
         """View a reminder via its list index or UUID.
 
         Args:
-            ctx (commands.Context): The command's invocation context.
-            id_ (Union[int, str]): The index or UUID of the reminder to view.
+            ctx (commands.Context):
+                The command's invocation context.
+            id_ (Union[int, str]):
+                The index or UUID of the reminder to view.
         """
         try:
             job = await self.fetch_reminder_job_via_id(ctx, id_)
@@ -419,8 +429,10 @@ class RemindMeCog(commands.Cog):
         The reminder is only deleted for the user that issued the command.
 
         Args:
-            ctx (commands.Context): The command's invocation context.
-            id_ (Union[int, str]): The index or UUID of the reminder to delete.
+            ctx (commands.Context):
+                The command's invocation context.
+            id_ (Union[int, str]):
+                The index or UUID of the reminder to delete.
         """
         try:
             job = await self.fetch_reminder_job_via_id(ctx, id_)
@@ -465,8 +477,10 @@ class RemindMeCog(commands.Cog):
         """Purge a reminder from the database.
 
         Args:
-            ctx (commands.Context): The command's invocation context.
-            id_ (Union[int, str]): The index or UUID of the reminder to purge.
+            ctx (commands.Context):
+                The command's invocation context.
+            id_ (Union[int, str]):
+                The index or UUID of the reminder to purge.
         """
         try:
             job = await self.fetch_reminder_job_via_id(ctx, id_)
@@ -511,7 +525,8 @@ class RemindMeCog(commands.Cog):
         running an otherwise blocking call as a coroutine.
 
         Args:
-            reminder_spec (str): The string which should be parsed.
+            reminder_spec (str):
+                The string which should be parsed.
 
         Returns:
             tuple[datetime.datetime, str]: The reminder's date and message.
@@ -541,9 +556,12 @@ class RemindMeCog(commands.Cog):
         Wrapper for :py:meth:`create_reminder_embed`.
 
         Args:
-            job (tuple): The reminder job fetched from the database.
-            title (str): A title for the reminder's embed.
-            with_dt (bool): Whether to add the reminder's time to the embed or not.
+            job (tuple):
+                The reminder job fetched from the database.
+            title (str):
+                A title for the reminder's embed.
+            with_dt (bool):
+                Whether to add the reminder's time to the embed or not.
 
         Returns:
             discord.Embed: The reminder's embed.
@@ -579,13 +597,16 @@ class RemindMeCog(commands.Cog):
         """Helper method that creates a reminder's embed.
 
         Args:
-            reminder_dt (datetime.datetime): The reminder's datetime.
-            reminder_msg (str): The reminder's message.
-            title (str): The title to set for the embed.
-            message (Optional[discord.Message]): Optional discord message
-                that is linked in the reminder's message.
-            author (Optional[discord.User]): Optional user to display as author
-                in the embed's footer.
+            reminder_dt (datetime.datetime):
+                The reminder's datetime.
+            reminder_msg (str):
+                The reminder's message.
+            title (str):
+                The title to set for the embed.
+            message (Optional[discord.Message]):
+                Optional discord message that is linked in the reminder's message.
+            author (Optional[discord.User]):
+                Optional user to display as author in the embed's footer.
 
         Returns:
             discord.Embed: The reminder's embed.
@@ -619,7 +640,8 @@ class RemindMeCog(commands.Cog):
         on the server.
 
         Args:
-            ctx (commands.Context): The command's invocation context.
+            ctx (commands.Context):
+                The command's invocation context.
 
         Returns:
             list[tuple]: A list of reminder job records.
@@ -637,8 +659,10 @@ class RemindMeCog(commands.Cog):
         """Helper method that fetches a reminder job via its list index or UUID.
 
         Args:
-            ctx (commands.Context): The command's invocation context.
-            id_ (Union[int, str]): Either the reminder's list index or UUID.
+            ctx (commands.Context):
+                The command's invocation context.
+            id_ (Union[int, str]):
+                Either the reminder's list index or UUID.
 
         Returns:
             Optional[tuple]: The reminder job if found or None.
@@ -723,9 +747,10 @@ class RemindMeCog(commands.Cog):
         Simply notifies the user about their mistake.
 
         Args:
-            ctx (commands.Context): The context in which the command was invoked.
-            error (commands.CommandError): The error raised during the execution
-                of the command.
+            ctx (commands.Context):
+                The context in which the command was invoked.
+            error (commands.CommandError):
+                The error raised during the execution of the command.
         """
         if isinstance(error, commands.CommandInvokeError):
             if isinstance(error.original, parser.ReminderParseError):
@@ -764,7 +789,8 @@ async def _scheduled_reminder(reminder_id: uuid.UUID):
     Schedules a reminder message to be sent to its users.
 
     Args:
-        reminder_id (uuid.UUID): The reminder's UUID.
+        reminder_id (uuid.UUID):
+            The reminder's UUID.
     """
     log.info(f"[REMINDME] Sending reminder [%s]", reminder_id)
 
@@ -854,10 +880,12 @@ def has_mod_role(member: discord.Member):
     ``False`` is consequently returned.
 
     Args:
-        member (discord.Member): The member to check.
+        member (discord.Member):
+            The member to check.
 
     Returns:
-        bool: Whether the member is a moderator or not.
+        bool:
+            Whether the member is a moderator or not.
     """
     if not isinstance(member, discord.Member):
         return False
