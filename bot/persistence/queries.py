@@ -88,7 +88,7 @@ REMOVE_REMINDER_JOB = "DELETE FROM RemindmeJobs WHERE JobID = ?"
 GET_REMINDER_JOBS = "SELECT JobID, Timestamp, Message, MessageID, ChannelID, AuthorID FROM RemindmeJobs " \
                     "ORDER BY Timestamp ASC"
 GET_REMINDER_JOB_FROM_MESSAGE_ID = "SELECT JobID, Timestamp, Message, MessageID, ChannelID, AuthorID FROM RemindmeJobs " \
-                                   "WHERE BotMessageID = ? " \
+                                   "WHERE MessageID = ? " \
                                    "ORDER BY Timestamp ASC"
 
 # Needs to be formatted for varargs
