@@ -179,6 +179,11 @@ class RemindMeCog(commands.Cog):
         that it may be used by moderators to post a reminder with a title to a
         specific channel.
 
+        Note:
+            The parameter ``reminder_msg`` always replaces the message that is
+            parsed from the reminder specification. This makes the command a
+            little more intuitive to use.
+
         System reminders cannot be posted in DM channels.
 
         Args:
@@ -186,6 +191,8 @@ class RemindMeCog(commands.Cog):
                 The command's invocation context.
             title (str):
                 The title of the reminder.
+            reminder_msg (str):
+                The description of the reminder.
             channel (Optional[discord.TextChannel]):
                 The channel in which the reminder should be posted.
             reminder_spec (Optional[str]):
