@@ -284,6 +284,8 @@ class RemindMeCog(commands.Cog):
         Args:
             ctx (commands.Context):
                 The command's invocation context.
+            mod_arg (Optional[Union[discord.Member, int, str]]):
+                An optional argument that may be supplied by moderators.
         """
         if isinstance(ctx.channel, discord.DMChannel):
             is_moderator = False
@@ -499,6 +501,11 @@ class RemindMeCog(commands.Cog):
     async def remindme_purge(self, ctx: commands.Context, id_: Union[int, str]):
         """Purge a reminder from the database.
 
+        The reminder itself is completely removed from the database and will not
+        be received by anyone anymore.
+
+        This command can only be used by moderators.
+
         Args:
             ctx (commands.Context):
                 The command's invocation context.
@@ -669,6 +676,11 @@ class RemindMeCog(commands.Cog):
         Args:
             ctx (commands.Context):
                 The command's invocation context.
+            is_mod (bool):
+                Whether a moderator is fetching records or not.
+            mod_arg (Optional[Union[discord.Member, int, str]]):
+                An argument supplied by a moderator. May be either the @mention
+                of a member, the ID of a member, or "all".
 
         Returns:
             list[tuple]: A list of reminder job records.
