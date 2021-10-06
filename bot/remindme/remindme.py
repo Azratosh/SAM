@@ -74,7 +74,6 @@ class RemindMeCog(commands.Cog):
         """
         if reminder_spec is None:
             await self.remindme_help(ctx)
-            await ctx.message.delete(delay=60)
             return
 
         if (
@@ -88,9 +87,7 @@ class RemindMeCog(commands.Cog):
                     f"{rm_const.REMINDER_USER_CREATE_LIMIT} Erinnerungen erstellen.",
                     color=constants.EMBED_COLOR_WARNING,
                 ),
-                delete_after=60,
             )
-            await ctx.message.delete(delay=60)
             return
 
         reminder_dt, reminder_msg = await self.parse_reminder(reminder_spec)
@@ -101,9 +98,7 @@ class RemindMeCog(commands.Cog):
                     description="Deine Erinnerung muss eine Nachricht beinhalten.",
                     color=constants.EMBED_COLOR_WARNING,
                 ),
-                delete_after=60,
             )
-            await ctx.message.delete(delay=60)
             return
 
         embed = self.create_reminder_embed(
@@ -401,19 +396,20 @@ class RemindMeCog(commands.Cog):
                         embed = current_embed.copy().set_footer(
                             text="Diese Nachricht ist nun inaktiv."
                         )
-                        await ctx.message.delete()
                         await message.edit(embed=embed)
 
                     else:
-                        await ctx.message.delete()
                         await message.delete()
+
+                    await ctx.message.delete()
                     break
 
         else:
             message = await ctx.send(embed=pages[0])
-            if not (is_moderator or isinstance(ctx.channel, discord.DMChannel)):
+            if is_moderator or isinstance(ctx.channel, discord.DMChannel):
+                pass  # Leaving this empty for now in case behaviour will be changed
+            else:
                 await message.delete(delay=60)
-            await ctx.message.delete(delay=60)
 
     @remindme.command(name="view")
     @command_log
@@ -441,10 +437,7 @@ class RemindMeCog(commands.Cog):
             else:
                 await ctx.send(
                     embed=await self.create_reminder_embed_from_job(job),
-                    delete_after=60,
                 )
-
-        await ctx.message.delete(delay=60)
 
     @remindme.command(name="remove", aliases=("rm",))
     @command_log
@@ -490,10 +483,7 @@ class RemindMeCog(commands.Cog):
                         description="Die Erinnerung wurde erfolgreich gelöscht.",
                         colour=constants.EMBED_COLOR_INFO,
                     ),
-                    delete_after=60,
                 )
-
-        await ctx.message.delete(delay=60)
 
     @remindme.command(name="purge")
     @commands.has_role(int(constants.ROLE_ID_MODERATOR))
@@ -518,7 +508,6 @@ class RemindMeCog(commands.Cog):
         except ValueError:
             await ctx.send(
                 embed=discord.Embed(title="Fehler", description="Ungültige ID."),
-                delete_after=60,
             )
 
         else:
@@ -544,10 +533,7 @@ class RemindMeCog(commands.Cog):
                         "erfolgreich von der Datenbank enfernt.",
                         color=constants.EMBED_COLOR_MODLOG_PURGE,
                     ),
-                    delete_after=60,
                 )
-
-        await ctx.message.delete(delay=60)
 
     async def parse_reminder(self, reminder_spec: str) -> tuple[datetime.datetime, str]:
         """Launches a new thread in order to parse the reminder's specification,
@@ -783,7 +769,6 @@ class RemindMeCog(commands.Cog):
                 description="Beim Erstellen der Erinnerung ist etwas schief gegangen.",
                 colour=constants.EMBED_COLOR_WARNING,
             ),
-            delete_after=60,
         )
 
     @staticmethod
@@ -801,9 +786,7 @@ class RemindMeCog(commands.Cog):
                 description="Es konnten keine Erinnerungen gefunden werden.",
                 color=constants.EMBED_COLOR_INFO,
             ),
-            delete_after=60,
         )
-        await ctx.message.delete(delay=60)
 
     @staticmethod
     async def handle_no_job_with_id_found(ctx: commands.Context):
@@ -822,9 +805,7 @@ class RemindMeCog(commands.Cog):
                 description="Es konnte keine Erinnerung mit dieser ID "
                 "gefunden werden.",
             ),
-            delete_after=60,
         )
-        await ctx.message.delete(delay=60)
 
     @remindme.error
     async def remindme_error(self, ctx: commands.Context, error):
@@ -840,14 +821,12 @@ class RemindMeCog(commands.Cog):
         """
         if isinstance(error, commands.CommandInvokeError):
             if isinstance(error.original, parser.ReminderParseError):
-                await ctx.message.delete(delay=60)
                 await ctx.message.reply(
                     embed=discord.Embed(
                         title="Fehler beim Auslesen der Erinnerung",
                         description=f"{error.original.args[0]}",
                         color=constants.EMBED_COLOR_WARNING,
                     ),
-                    delete_after=60,
                 )
 
     @commands.Cog.listener(name="on_raw_reaction_add")
