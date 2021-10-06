@@ -332,11 +332,28 @@ class RemindMeCog(commands.Cog):
                     author = member.mention if member else ""
                 else:
                     author = ""
+
+                reminder_dt_str = job_id[1].strftime(
+                    rm_const.REMINDER_DT_MESSAGE_FORMAT
+                )
+                field_name = (
+                    f"`{str(job_id[0])}` - {reminder_dt_str}"
+                    if is_moderator
+                    else f"#{page_index + page_job_index + 1} - {reminder_dt_str}"
+                )
+
+                reminder_message = (
+                    f"{job_id[2] if len(job_id[2]) <= 50 else f'{job_id[2][:46]} ...'}"
+                )
+                field_value = (
+                    reminder_message + f"\n\n**Von:** {author}"
+                    if is_moderator
+                    else reminder_message
+                )
+
                 page_embed.add_field(
-                    name=f"#{page_index + page_job_index + 1}"
-                    f" - {job_id[1].strftime(rm_const.REMINDER_DT_MESSAGE_FORMAT)}",
-                    value=f"{job_id[2] if len(job_id[2]) <= 50 else f'{job_id[2][:45]} ...'}"
-                    f"\n\n{f'`{str(job_id[0])}` {author}' if is_moderator else ''}",
+                    name=field_name,
+                    value=field_value,
                     inline=False,
                 )
 
