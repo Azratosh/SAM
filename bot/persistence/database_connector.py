@@ -152,15 +152,19 @@ class DatabaseConnector:
         scheduler.
 
         Args:
-            job_id (uuid.UUID): The UUID of the job. This is the same UUID that
-                must be set as the scheduler's job ID.
-            timestamp (datetime.datetime): The date and time at which the reminder
-                should be issued.
-            message (str): The reminder's message.
-            message_id (int): The ID of the *discord.Message* the bot had posted.
-            channel_id (int): The ID of the *discord.TextChannel* the bot's message
-                was posted in.
-            author_id (int): The ID of the user that originally created the reminder.
+            job_id (uuid.UUID):
+                The UUID of the job. This is the same UUID that must be set as
+                the scheduler's job ID.
+            timestamp (datetime.datetime):
+                The date and time at which the reminder should be issued.
+            message (str):
+                The reminder's message.
+            message_id (int):
+                The ID of the *discord.Message* the bot had posted.
+            channel_id (int):
+                The ID of the *discord.TextChannel* the bot's message was posted in.
+            author_id (int):
+                The ID of the user that originally created the reminder.
         """
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(
@@ -183,8 +187,9 @@ class DatabaseConnector:
         also be removed.
 
         Args:
-            job_id (uuid.UUID): The UUID of the job to remove. This is the same
-                UUID that must have been set as the scheduler's job ID.
+            job_id (uuid.UUID):
+                The UUID of the job to remove. This is the same UUID that must
+                have been set as the scheduler's job ID.
         """
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.REMOVE_REMINDER_JOB, (str(job_id),))
@@ -225,7 +230,8 @@ class DatabaseConnector:
         table *RemindmeJobs*. If no job was found, ``None`` is returned.
 
         Args:
-            message_id (int): The reminder's message ID.
+            message_id (int):
+                The reminder's message ID.
 
         Returns:
             Optional[tuple[uuid.UUID, datetime.datetime, str, int, int, int]:
@@ -246,7 +252,8 @@ class DatabaseConnector:
         types and objects.
 
         Args:
-            row (tuple[str, str, str, str]): A row from the *RemindmeJobs* table.
+            row (tuple[str, str, str, str]):
+                A row from the *RemindmeJobs* table.
 
         Returns:
             tuple[uuid.UUID, datetime.datetime, str, int, int, int]:
@@ -265,10 +272,12 @@ class DatabaseConnector:
         """Gets the number of jobs created by a given discord user's ID.
 
         Args:
-            author_id (int): An ID of a discord user.
+            author_id (int):
+                An ID of a discord user.
 
         Returns:
-            int: The number of reminder jobs the user has created.
+            int:
+                The number of reminder jobs the user has created.
         """
         with DatabaseManager(self._db_file) as db_manager:
             result = db_manager.execute(
@@ -278,25 +287,29 @@ class DatabaseConnector:
             return row[0] if row else 0
 
     def add_reminder_for_user(self, job_id: uuid.UUID, user_id: int):
-        """Adds a reminder for a user to the table *RemindmeUserReminders*.
+        """Adds a reminder for a user ID to the table *RemindmeUserReminders*.
 
         One must ensure that the reminder job already exists in the `RemindmeJobs`
         table.
 
         Args:
-            job_id (uuid.UUID): The UUID of the job.
-            user_id (int): The user's ID to associate with the given job.
+            job_id (uuid.UUID):
+                The UUID of the reminder job.
+            user_id (int):
+                The user's ID to associate with the given job.
         """
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.INSERT_REMINDER_FOR_USER, (str(job_id), user_id))
             db_manager.commit()
 
     def remove_reminder_for_user(self, job_id: uuid.UUID, user_id: int):
-        """Removes a reminder for a user from the table *RemindmeUserReminders*.
+        """Removes a reminder for a user ID from the table *RemindmeUserReminders*.
 
         Args:
-            job_id (uuid.UUID): The UUID of the job.
-            user_id (int): The user's ID to associate with the given job.
+            job_id (uuid.UUID):
+                The UUID of the reminder job.
+            user_id (int):
+                The user's ID to associate with the given job.
         """
         with DatabaseManager(self._db_file) as db_manager:
             db_manager.execute(queries.REMOVE_REMINDER_FOR_USER, (str(job_id), user_id))
@@ -329,6 +342,23 @@ class DatabaseConnector:
                     queries.REMOVE_REMINDER_FOR_USERS, (str(job_id),)
                 )
 
+    def remove_many_reminder_for_user(
+        self, job_user_tuples: list[tuple[uuid.UUID, int]]
+    ):
+        """Removes many reminders for many users from the table *RemindmeUserReminders*.
+
+        Args:
+            job_user_tuples (list[tuple[uuid.UUID, int]]):
+                A list of tuples, each containing a reminder job's UUID and the
+                user's ID.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            db_manager.executemany(
+                queries.REMOVE_REMINDER_FOR_USER,
+                ((str(job_id), int(user_id)) for job_id, user_id in job_user_tuples),
+            )
+            db_manager.commit()
+
     def get_reminders_for_users(
         self, user_ids: Optional[list[int]] = None
     ) -> list[tuple[uuid.UUID, int]]:
@@ -336,7 +366,8 @@ class DatabaseConnector:
         *RemindmeUserReminders*.
 
         Args:
-            user_ids (Optional[list[int]]): The user IDs to query for.
+            user_ids (Optional[list[int]]):
+                The user IDs to query for.
 
         Returns:
             list[tuple[uuid.UUID, int]:
@@ -354,23 +385,6 @@ class DatabaseConnector:
                 result = db_manager.execute(queries.GET_REMINDERS_FOR_USER)
 
             return [(uuid.UUID(row[0]), int(row[1])) for row in result.fetchall()]
-
-    def remove_many_reminder_for_user(
-        self, job_user_tuples: list[tuple[uuid.UUID, int]]
-    ):
-        """Removes many reminders for many users from the table *RemindmeUserReminders*.
-
-        Args:
-            job_user_tuples (list[tuple[uuid.UUID, int]]):
-                A list of tuples, each containing a reminder job's UUID and the
-                user's ID.
-        """
-        with DatabaseManager(self._db_file) as db_manager:
-            db_manager.executemany(
-                queries.REMOVE_REMINDER_FOR_USER,
-                ((str(job_id), int(user_id)) for job_id, user_id in job_user_tuples),
-            )
-            db_manager.commit()
 
     def get_reminder_jobs_for_user(
         self, user_id: int
@@ -399,7 +413,8 @@ class DatabaseConnector:
         with a reminder job.
 
         Args:
-            job_id (uuid.UUID): The reminder job's UUID to fetch the user IDs for.
+            job_id (uuid.UUID):
+                The reminder job's UUID to fetch the user IDs for.
 
         Returns:
             list[int]:
