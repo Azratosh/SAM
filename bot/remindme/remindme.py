@@ -426,18 +426,18 @@ class RemindMeCog(commands.Cog):
 
         await ctx.message.delete(delay=60)
 
-    @remindme.command(name="delete", aliases=("remove", "rm"))
+    @remindme.command(name="remove", aliases=("rm",))
     @command_log
-    async def remindme_delete(self, ctx: commands.Context, id_: Union[int, str]):
-        """Delete a reminder via its list index or UUID.
+    async def remindme_remove(self, ctx: commands.Context, id_: Union[int, str]):
+        """Remove a reminder via its list index or UUID.
 
-        The reminder is only deleted for the user that issued the command.
+        The reminder is only removed for the user that issued the command.
 
         Args:
             ctx (commands.Context):
                 The command's invocation context.
             id_ (Union[int, str]):
-                The index or UUID of the reminder to delete.
+                The index or UUID of the reminder to remove.
         """
         try:
             job = await self.fetch_reminder_job_via_id(ctx, id_)
