@@ -327,7 +327,7 @@ class RemindMeCog(commands.Cog):
             ):
                 # Moderators are also able to see the reminder's UUID
                 # for easier deletion, as well as who created the reminder
-                if is_moderator:
+                if is_moderator and mod_arg:
                     member: discord.Member = self.guild.get_member(job_id[5])
                     author = member.mention if member else ""
                 else:
@@ -338,7 +338,7 @@ class RemindMeCog(commands.Cog):
                 )
                 field_name = (
                     f"`{str(job_id[0])}` - {reminder_dt_str}"
-                    if is_moderator
+                    if is_moderator and mod_arg
                     else f"#{page_index + page_job_index + 1} - {reminder_dt_str}"
                 )
 
@@ -347,7 +347,7 @@ class RemindMeCog(commands.Cog):
                 )
                 field_value = (
                     reminder_message + f"\n\n**Von:** {author}"
-                    if is_moderator
+                    if is_moderator and mod_arg
                     else reminder_message
                 )
 
@@ -409,7 +409,11 @@ class RemindMeCog(commands.Cog):
                             await message.remove_reaction(reaction, user)
 
                 except asyncio.TimeoutError:
-                    if is_moderator or isinstance(ctx.channel, discord.DMChannel):
+                    if (
+                        is_moderator
+                        and mod_arg
+                        or isinstance(ctx.channel, discord.DMChannel)
+                    ):
                         embed = current_embed.copy().set_footer(
                             text="Diese Nachricht ist nun inaktiv."
                         )
@@ -423,7 +427,7 @@ class RemindMeCog(commands.Cog):
 
         else:
             message = await ctx.send(embed=pages[0])
-            if is_moderator or isinstance(ctx.channel, discord.DMChannel):
+            if is_moderator and mod_arg or isinstance(ctx.channel, discord.DMChannel):
                 pass  # Leaving this empty for now in case behaviour will be changed
             else:
                 await message.delete(delay=60)
