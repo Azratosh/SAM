@@ -528,6 +528,7 @@ class RemindMeCog(commands.Cog):
                 await self.handle_no_job_with_id_found(ctx)
             else:
                 self._db_connector.remove_reminder_job(job[0])
+                self._db_connector.remove_reminder_for_users(job[0])
 
                 log.info(
                     "[REMINDME] %s#%s (%s) purged a reminder from the database: [%s] (%s) by %s - Message:\n%s",
