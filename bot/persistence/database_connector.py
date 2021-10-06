@@ -302,6 +302,33 @@ class DatabaseConnector:
             db_manager.execute(queries.REMOVE_REMINDER_FOR_USER, (str(job_id), user_id))
             db_manager.commit()
 
+    def remove_reminder_for_users(
+        self, job_id: uuid.UUID, user_ids: Optional[list[int]] = None
+    ):
+        """Removes a reminder for a list of user IDs from the table *RemindmeUserReminders*.
+
+        If no list of user IDs is provided, the reminder is removed for all
+        user IDS.
+
+        Args:
+            job_id (uuid.UUID):
+                The UUID of the reminder job.
+            user_ids (Optional[list[int]]):
+                An optional list of user IDs to remove the reminder for.
+        """
+        with DatabaseManager(self._db_file) as db_manager:
+            if user_ids is not None:
+                db_manager.execute(
+                    queries.REMOVE_REMINDER_FOR_USERS_CONDITIONAL.format(
+                        ", ".join("?" for _ in user_ids)
+                    ),
+                    (job_id, *(user_id for user_id in user_ids)),
+                )
+            else:
+                db_manager.execute(
+                    queries.REMOVE_REMINDER_FOR_USERS, (str(job_id),)
+                )
+
     def get_reminders_for_users(
         self, user_ids: Optional[list[int]] = None
     ) -> list[tuple[uuid.UUID, int]]:
