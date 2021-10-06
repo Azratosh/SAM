@@ -687,7 +687,7 @@ class RemindMeCog(commands.Cog):
             except Exception:
                 raise ValueError("Reminder ID is neither an index or a UUID")
 
-            reminder_jobs = list(self._db_connector.get_reminder_jobs([id_]))
+            reminder_jobs = self._db_connector.get_reminder_jobs([id_])
             if not reminder_jobs:
                 return
 
@@ -833,7 +833,7 @@ async def _scheduled_reminder(reminder_id: uuid.UUID):
     """
     log.info(f"[REMINDME] Sending reminder [%s]", reminder_id)
 
-    reminder_jobs = list(RemindMeCog.db_connector.get_reminder_jobs([reminder_id]))
+    reminder_jobs = RemindMeCog.db_connector.get_reminder_jobs([reminder_id])
     if not any(reminder_jobs):
         log.warning("[REMINDME] Reminder does not exist in database anymore. Skipping.")
         return
