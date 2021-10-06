@@ -274,13 +274,15 @@ class RemindMeCog(commands.Cog):
     ):
         """List available reminders.
 
-        Moderators are able to see all reminders, including their author and UUID.
+        Moderators are able to see all reminders, including their author and UUID,
+        depending on which ``mod_arg`` they provide.
 
         Args:
             ctx (commands.Context):
                 The command's invocation context.
             mod_arg (Optional[Union[discord.Member, int, str]]):
-                An optional argument that may be supplied by moderators.
+                An argument supplied by a moderator. May be either the @mention
+                of a member, the ID of a member, or "all".
         """
         if isinstance(ctx.channel, discord.DMChannel):
             is_moderator = False
@@ -670,8 +672,8 @@ class RemindMeCog(commands.Cog):
     ) -> list[tuple]:
         """Helper method that fetches reminders in a consistent manner.
 
-        Moderators can view all jobs, but only if they're issuing the command
-        on the server.
+        Additional options for moderators are available through ``is_mod``
+        and ``mod_arg``.
 
         Args:
             ctx (commands.Context):
@@ -826,7 +828,7 @@ class RemindMeCog(commands.Cog):
         """Handles cases in which no reminder job with the given index or UUID
         is found.
 
-        Simply posts a message and deletes the author's original one.
+        Simply posts an error message.
 
         Args:
             ctx (commands.Context):
@@ -845,7 +847,7 @@ class RemindMeCog(commands.Cog):
     async def remindme_error(self, ctx: commands.Context, error):
         """Error handler for :obj:`parser.ReminderParseError` exceptions.
 
-        Simply notifies the user about their mistake.
+        Simply posts an error message.
 
         Args:
             ctx (commands.Context):
