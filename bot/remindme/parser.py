@@ -389,12 +389,6 @@ def _match_timestamp_date(text: str) -> Union[tuple[str, str], tuple[None, None]
     Iterates over all date regex patterns, attempting to match any of them on the
     given ``text``.
 
-    Note:
-        Due to the behaviour of :obj:`re.Pattern.match`, the given string is
-        always attempted to be matched from the *beginning.*
-
-        This is necessary for the parsing logic used in :func:`parse_timestamp`.
-
     Args:
         text (str): The string to attempt to match.
 
@@ -419,13 +413,7 @@ def _match_timestamp_time(text: str) -> Union[tuple[str, str], tuple[None, None]
     given ``text``.
 
     Additionally, if the string starts with ``24:00``, it is interpreted as
-    ``00:00`` for user friendliness.
-
-    Note:
-        Due to the behaviour of :obj:`re.Pattern.match`, the given string is
-        always attempted to be matched from the *beginning.*
-
-        This is necessary for the parsing logic used in :func:`parse_timestamp`.
+    ``00:00`` for usability's sake.
 
     Args:
         text (str): The string to attempt to match.
@@ -451,14 +439,7 @@ def _match_timestamp_time(text: str) -> Union[tuple[str, str], tuple[None, None]
 def _normalize_date_str(
     date_str: str, date_format_str: str, ref_dt: datetime.datetime
 ) -> tuple[str, str]:
-    """
-    Internal function.
-
-    If the given date format string does not contain a year placeholder
-    (``%y`` or ``%Y``), the year of the reference datetime object is appended
-    to the date string and a corresponding placeholder to its format string.
-
-    Otherwise, both strings are left unchanged.
+    """Adds the year to a date string if it's missing.
 
     Args:
         date_str (str): A string representing a date.
@@ -536,8 +517,8 @@ def parse_duration(
         text_part_iter = iter(text_parts)
 
         for value, keyword in zip(text_part_iter, text_part_iter):
-            parsed_value = _parse_duration_value(value)
-            parsed_keyword = _parse_duration_keyword(keyword)
+            parsed_value = _try_parse_duration_value(value)
+            parsed_keyword = _try_parse_duration_keyword(keyword)
 
             if parsed_keyword in duration_spec:
                 duplicate_keyword_errors.append(
@@ -587,13 +568,13 @@ def parse_duration(
 
             # Attempt to parse value and keyword, store exceptions
             try:
-                parsed_value = _parse_duration_value(value)
+                parsed_value = _try_parse_duration_value(value)
             except ReminderParseError as e:
                 value_error = e
                 parsed_value = None
 
             try:
-                parsed_keyword = _parse_duration_keyword(keyword)
+                parsed_keyword = _try_parse_duration_keyword(keyword)
                 if parsed_keyword in duration_spec:
                     duplicate_keyword_errors.append(
                         ReminderParseError(
@@ -667,14 +648,8 @@ def parse_duration(
     return parsed_datetime, message
 
 
-def _parse_duration_value(duration_value: str) -> float:
-    """
-    Attempts to convert a string into a float.
-
-    Note:
-        This function was made to be used specifically in :func:`parse_duration`
-        in order to create :obj:`ReminderParseError` exceptions which are to
-        handled during the parsing process.
+def _try_parse_duration_value(duration_value: str) -> float:
+    """Tries to convert a string into a float.
 
     Args:
         duration_value (str): The string to attempt to convert into a float.
@@ -694,15 +669,11 @@ def _parse_duration_value(duration_value: str) -> float:
         )
 
 
-def _parse_duration_keyword(duration_keyword: str):
-    """
-    Attempts to find a matching duration key to be used as an argument in
-    :obj:`~.relativedelta.relativedelta` corresponding to the keyword given.
+def _try_parse_duration_keyword(duration_keyword: str):
+    """Tries to find a matching duration key for the given duration keyword.
 
-    Note:
-        This function was made to be used specifically in :func:`parse_duration`
-        in order to create :obj:`ReminderParseError` exceptions which are to
-        handled during the parsing process.
+    The resulting key is to be used as an argument in
+    :obj:`~.relativedelta.relativedelta`.
 
     Args:
         duration_keyword (str): The keyword for which to find a valid key.
