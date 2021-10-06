@@ -443,10 +443,7 @@ class RemindMeCog(commands.Cog):
             job = await self.fetch_reminder_job_via_id(ctx, id_)
 
         except ValueError:
-            await ctx.send(
-                embed=discord.Embed(title="Fehler", description="Ungültige ID."),
-                delete_after=60,
-            )
+            await self.handle_invalid_job_id(ctx)
 
         else:
             if job is None:
@@ -473,10 +470,7 @@ class RemindMeCog(commands.Cog):
             job = await self.fetch_reminder_job_via_id(ctx, id_)
 
         except ValueError:
-            await ctx.send(
-                embed=discord.Embed(title="Fehler", description="Ungültige ID."),
-                delete_after=60,
-            )
+            await self.handle_invalid_job_id(ctx)
 
         else:
             if job is None:
@@ -523,9 +517,7 @@ class RemindMeCog(commands.Cog):
             job = await self.fetch_reminder_job_via_id(ctx, id_)
 
         except ValueError:
-            await ctx.send(
-                embed=discord.Embed(title="Fehler", description="Ungültige ID."),
-            )
+            await self.handle_invalid_job_id(ctx)
 
         else:
             if job is None:
@@ -806,6 +798,25 @@ class RemindMeCog(commands.Cog):
         )
 
     @staticmethod
+    async def handle_invalid_job_id(ctx: commands.Context):
+        """Handles cases in which an invalid reminder job UUID or index was
+        provided.
+
+        Simply posts an error message.
+
+        Args:
+            ctx (commands.Context):
+                The command's invocation context.
+        """
+        await ctx.send(
+            embed=discord.Embed(
+                title="Fehler",
+                description="Ungültige ID.",
+                colour=constants.EMBED_COLOR_WARNING,
+            ),
+        )
+
+    @staticmethod
     async def handle_no_job_with_id_found(ctx: commands.Context):
         """Handles cases in which no reminder job with the given index or UUID
         is found.
@@ -821,6 +832,7 @@ class RemindMeCog(commands.Cog):
                 title="Fehler",
                 description="Es konnte keine Erinnerung mit dieser ID "
                 "gefunden werden.",
+                colour=constants.EMBED_COLOR_WARNING,
             ),
         )
 
