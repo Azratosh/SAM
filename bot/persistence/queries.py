@@ -81,7 +81,7 @@ INSERT_MEMBER_NAME = "INSERT INTO MemberNameHistory (UserID, Name, Timestamp) VA
 GET_MEMBER_NAMES = "SELECT Name, Timestamp FROM MemberNameHistory WHERE UserID = ? ORDER BY ROWID DESC"
 
 
-# Remindme
+# Remindme: Reminder Jobs
 INSERT_REMINDER_JOB = "INSERT OR IGNORE INTO RemindmeJobs (JobID, Timestamp, Message, MessageID, ChannelID, AuthorID) " \
                       "VALUES (?, ?, ?, ?, ?, ?)"
 REMOVE_REMINDER_JOB = "DELETE FROM RemindmeJobs WHERE JobID = ?"
@@ -99,8 +99,19 @@ GET_REMINDER_JOBS_CONDITIONAL = "SELECT JobID, Timestamp, Message, MessageID, Ch
 GET_REMINDER_JOB_COUNT_FOR_AUTHOR = "SELECT COUNT(*) FROM RemindmeJobs " \
                                     "WHERE AuthorID = ?"
 
+# Remindme: reminders for users
 INSERT_REMINDER_FOR_USER = "INSERT OR IGNORE INTO RemindmeUserReminders (JobID, UserID) VALUES (?, ?)"
-REMOVE_REMINDER_FOR_USER = "DELETE FROM RemindmeUserReminders WHERE JobID = ? AND UserID = ?"
+
+REMOVE_REMINDER_FOR_USER = "DELETE FROM RemindmeUserReminders " \
+                           "WHERE JobID = ? AND UserID = ?"
+
+REMOVE_REMINDER_FOR_USERS = "DELETE FROM RemindmeUserReminders " \
+                            "WHERE JobID = ?"
+
+# Needs to be formatted for varargs
+REMOVE_REMINDER_FOR_USERS_CONDITIONAL = "DELETE FROM RemindmeUserReminders " \
+                                        "WHERE JobID = ? AND UserID IN ({0})"
+
 GET_REMINDERS_FOR_USER = "SELECT JobID, UserID FROM RemindmeUserReminders"
 
 # Needs to be formatted for varargs
