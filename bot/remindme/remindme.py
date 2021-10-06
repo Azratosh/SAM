@@ -454,7 +454,7 @@ class RemindMeCog(commands.Cog):
                 await self.handle_no_job_with_id_found(ctx)
             else:
                 await ctx.send(
-                    embed=await self.create_reminder_embed_from_job(job),
+                    embed=await self.create_reminder_embed_from_job(job, with_dt=True),
                 )
 
     @remindme.command(name="remove", aliases=("rm",))
