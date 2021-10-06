@@ -272,7 +272,11 @@ class RemindMeCog(commands.Cog):
 
     @remindme.command(name="list", aliases=("ls",))
     @command_log
-    async def remindme_list(self, ctx: commands.Context):
+    async def remindme_list(
+        self,
+        ctx: commands.Context,
+        mod_arg: Optional[Union[discord.Member, int, str]] = None,
+    ):
         """List available reminders.
 
         Moderators are able to see all reminders, including their author and UUID.
@@ -281,13 +285,27 @@ class RemindMeCog(commands.Cog):
             ctx (commands.Context):
                 The command's invocation context.
         """
-
         if isinstance(ctx.channel, discord.DMChannel):
             is_moderator = False
         else:
             is_moderator = has_mod_role(ctx.author)
 
-        reminder_jobs = self.fetch_reminders(ctx)
+        try:
+            reminder_jobs = self.fetch_reminders(ctx, is_moderator, mod_arg)
+        except (ValueError, TypeError) as error:
+            await ctx.send(
+                embed=discord.Embed(
+                    title="Fehler",
+                    description=f"{error.args[0]}\nMögliche Optionen für Moderatoren:\n"
+                    "```\n"
+                    "!remindme list all - Zeigt alle Erinnerungen aller Nutzer\n"
+                    "!remindme list @<user> - Zeigt alle Erinnerungen eines Nutzers\n"
+                    "!remindme list <ID> - Zeigt alle Erinnerungen eines Nutzers anhand dessen ID\n"
+                    "```",
+                    colour=constants.EMBED_COLOR_WARNING,
+                ),
+            )
+            return
 
         if not reminder_jobs:
             await self.handle_no_jobs_found(ctx)
@@ -637,7 +655,12 @@ class RemindMeCog(commands.Cog):
 
         return embed
 
-    def fetch_reminders(self, ctx: commands.Context) -> list[tuple]:
+    def fetch_reminders(
+        self,
+        ctx: commands.Context,
+        is_mod: bool = False,
+        mod_arg: Optional[Union[discord.Member, int, str]] = None,
+    ) -> list[tuple]:
         """Helper method that fetches reminders in a consistent manner.
 
         Moderators can view all jobs, but only if they're issuing the command
@@ -650,12 +673,29 @@ class RemindMeCog(commands.Cog):
         Returns:
             list[tuple]: A list of reminder job records.
         """
-        # Moderators can view all jobs if they're on the server
-        if has_mod_role(ctx.author) and not isinstance(ctx.channel, discord.DMChannel):
-            return list(self._db_connector.get_reminder_jobs())
+        if is_mod and mod_arg is not None:
+            if isinstance(mod_arg, discord.Member):
+                reminder_jobs = self._db_connector.get_reminder_jobs_for_user(
+                    mod_arg.id
+                )
+
+            elif isinstance(mod_arg, int):
+                reminder_jobs = self._db_connector.get_reminder_jobs_for_user(mod_arg)
+
+            elif isinstance(mod_arg, str):
+                if mod_arg.strip().lower() == "all":
+                    reminder_jobs = self._db_connector.get_reminder_jobs()
+                else:
+                    raise ValueError(f"Ungültige option `{mod_arg = }`")
+            else:
+                raise TypeError(
+                    f"Ungültiger Typ `{type(mod_arg)}` für Argument `{mod_arg = }`"
+                )
 
         else:
-            return list(self._db_connector.get_reminder_jobs_for_user(ctx.author.id))
+            reminder_jobs = self._db_connector.get_reminder_jobs_for_user(ctx.author.id)
+
+        return reminder_jobs
 
     async def fetch_reminder_job_via_id(
         self, ctx: commands.Context, id_: Union[int, str]
