@@ -314,12 +314,26 @@ class RemindMeCog(commands.Cog):
         # Generate pages
         # Each page is an embed that contains REMINDER_LIST_PAGE_ITEM_COUNT jobs
         # at most.
+        embed_title = f"{rm_const.REMINDER_EMOJI} Erinnerungen"
+        if is_moderator and mod_arg is not None:
+            if isinstance(mod_arg, int):
+                user: discord.User = self.guild.get_member(mod_arg)
+                if user:
+                    embed_title += f" - `{user.name}{user.discriminator} - `{user.id}``"
+                else:
+                    embed_title += f" - `{mod_arg}`"
+
+            elif isinstance(mod_arg, discord.Member):
+                embed_title += (
+                    f" - {mod_arg.name}#{mod_arg.discriminator} - `{mod_arg.id}`"
+                )
+
         pages = []
         for page_index in range(
             0, len(reminder_jobs), rm_const.REMINDER_LIST_PAGE_ITEM_COUNT
         ):
             page_embed = discord.Embed(
-                title=f"Reminders {rm_const.REMINDER_EMOJI}",
+                title=embed_title,
                 colour=constants.EMBED_COLOR_INFO,
             )
 
