@@ -44,7 +44,7 @@ DURATION_KEYWORDS: dict[str, tuple[str, ...]] = {
     "weeks": ("w", "weeks", "week", "wochen", "woche"),
     "days": ("d", "days", "day", "tage", "tag"),
     "hours": ("h", "hours", "hour", "stunden", "stunde"),
-    "minutes": ("m", "minutes", "minute", "minuten"),
+    "minutes": ("m", "min", "minutes", "minute", "minuten"),
 }
 """Keywords for specifying durations as well as their alternate forms.
 
