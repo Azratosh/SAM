@@ -2,6 +2,7 @@ import asyncio
 import concurrent.futures
 import datetime
 import functools
+import re
 from typing import Optional, Union
 import uuid
 
@@ -997,6 +998,34 @@ def has_mod_role(member: discord.Member):
         return False
 
     return bool(discord.utils.get(member.roles, id=int(constants.ROLE_ID_MODERATOR)))
+
+
+def sanitize_str(
+    message: str, sub_newlines: bool = True, sub_emojis: bool = True
+) -> str:
+    """Sanitizes a string, making it safe to be displayed.
+    By default, all options are ``True``.
+
+    Args:
+        message (str):
+            The message to sanitize.
+        sub_newlines (bool):
+            Whether to substitute newlines with a single space character.
+        sub_emojis (bool):
+            Whether to substitute emojis with an empty string.
+
+    Returns:
+        str: The sanitized string.
+    """
+    if sub_newlines:
+        newline_pattern = re.compile(r"(\n( )*)+")
+        message = re.sub(newline_pattern, " ", message)
+
+    if sub_emojis:
+        emoji_pattern = re.compile(r"(:(\w):)+", re.ASCII)
+        message = re.sub(emoji_pattern, "", message)
+
+    return message
 
 
 def setup(bot):
