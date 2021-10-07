@@ -308,7 +308,7 @@ class RemindMeCog(commands.Cog):
             return
 
         if not reminder_jobs:
-            await self.handle_no_jobs_found(ctx)
+            await self.handle_no_jobs_found(ctx, is_mod=is_moderator)
             return
 
         # Generate pages
@@ -457,11 +457,13 @@ class RemindMeCog(commands.Cog):
             job = await self.fetch_reminder_job_via_id(ctx, id_)
 
         except ValueError:
-            await self.handle_invalid_job_id(ctx)
+            await self.handle_invalid_job_id(ctx, is_mod=has_mod_role(ctx.author))
 
         else:
             if job is None:
-                await self.handle_no_job_with_id_found(ctx)
+                await self.handle_no_job_with_id_found(
+                    ctx, is_mod=has_mod_role(ctx.author)
+                )
             else:
                 await ctx.author.send(
                     embed=await self.create_reminder_embed_from_job(
@@ -487,11 +489,13 @@ class RemindMeCog(commands.Cog):
             job = await self.fetch_reminder_job_via_id(ctx, id_)
 
         except ValueError:
-            await self.handle_invalid_job_id(ctx)
+            await self.handle_invalid_job_id(ctx, is_mod=has_mod_role(ctx.author))
 
         else:
             if job is None:
-                await self.handle_no_job_with_id_found(ctx)
+                await self.handle_no_job_with_id_found(
+                    ctx, is_mod=has_mod_role(ctx.author)
+                )
             else:
                 self._db_connector.remove_reminder_for_user(job[0], ctx.author.id)
 
@@ -534,11 +538,13 @@ class RemindMeCog(commands.Cog):
             job = await self.fetch_reminder_job_via_id(ctx, id_)
 
         except ValueError:
-            await self.handle_invalid_job_id(ctx)
+            await self.handle_invalid_job_id(ctx, is_mod=has_mod_role(ctx.author))
 
         else:
             if job is None:
-                await self.handle_no_job_with_id_found(ctx)
+                await self.handle_no_job_with_id_found(
+                    ctx, is_mod=has_mod_role(ctx.author)
+                )
             else:
                 self._db_connector.remove_reminder_job(job[0])
                 self._db_connector.remove_reminder_for_users(job[0])
@@ -1024,7 +1030,7 @@ async def _scheduled_reminder_vacuum():
 # necessarily bound to this cog.
 
 
-def has_mod_role(member: discord.Member):
+def has_mod_role(member: discord.Member) -> bool:
     """Checks whether a guild member has the moderator role.
 
     If the supplied ``member`` is not an instance of ``discord.Member``,
