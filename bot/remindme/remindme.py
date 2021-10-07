@@ -810,7 +810,7 @@ class RemindMeCog(commands.Cog):
         )
 
     @staticmethod
-    async def handle_no_jobs_found(ctx: commands.Context):
+    async def handle_no_jobs_found(ctx: commands.Context, *, is_mod: bool = False):
         """Handles cases in which no reminder jobs are found.
 
         Simply posts a message and deletes the author's original one.
@@ -819,15 +819,21 @@ class RemindMeCog(commands.Cog):
             ctx (commands.Context):
                 The command's invocation context.
         """
-        await ctx.send(
+        description = "Es konnten keine Erinnerungen gefunden werden."
+
+        if is_mod:
+            description += f"\n\nAusgeführter Befehl:\n`{ctx.message}`"
+
+        await ctx.author.send(
             embed=discord.Embed(
-                description="Es konnten keine Erinnerungen gefunden werden.",
+                description=description,
                 color=constants.EMBED_COLOR_INFO,
             ),
         )
+        await ctx.message.delete()
 
     @staticmethod
-    async def handle_invalid_job_id(ctx: commands.Context):
+    async def handle_invalid_job_id(ctx: commands.Context, *, is_mod: bool = False):
         """Handles cases in which an invalid reminder job UUID or index was
         provided.
 
@@ -837,16 +843,28 @@ class RemindMeCog(commands.Cog):
             ctx (commands.Context):
                 The command's invocation context.
         """
-        await ctx.send(
+        description = "Ungültige ID."
+
+        if is_mod:
+            description += (
+                " Die ID muss entweder die UUID der Erinnerung oder der Index "
+                "einer deiner eigenen Erinnerungen sein.\n\nAusgeführter Befehl:"
+                f"\n`{ctx.message}`"
+            )
+
+        await ctx.author.send(
             embed=discord.Embed(
                 title="Fehler",
-                description="Ungültige ID.",
+                description=description,
                 colour=constants.EMBED_COLOR_WARNING,
             ),
         )
+        await ctx.message.delete()
 
     @staticmethod
-    async def handle_no_job_with_id_found(ctx: commands.Context):
+    async def handle_no_job_with_id_found(
+        ctx: commands.Context, *, is_mod: bool = False
+    ):
         """Handles cases in which no reminder job with the given index or UUID
         is found.
 
@@ -856,14 +874,19 @@ class RemindMeCog(commands.Cog):
             ctx (commands.Context):
                 The command's invocation context.
         """
-        await ctx.send(
+        description = "Es konnte keine Erinnerung mit dieser ID gefunden werden."
+
+        if is_mod:
+            description += f"\n\nAusgeführter Befehl:\n`{ctx.message}`"
+
+        await ctx.author.send(
             embed=discord.Embed(
                 title="Fehler",
-                description="Es konnte keine Erinnerung mit dieser ID "
-                "gefunden werden.",
+                description=description,
                 colour=constants.EMBED_COLOR_WARNING,
             ),
         )
+        await ctx.message.delete()
 
     @remindme.error
     async def remindme_error(self, ctx: commands.Context, error):
