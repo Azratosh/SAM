@@ -40,11 +40,11 @@ PART_OF_DAY_KEYWORDS: dict[datetime.time, tuple[str, ...]] = {
 
 DURATION_KEYWORDS: dict[str, tuple[str, ...]] = {
     "years": ("y", "years", "year", "jahre", "jahr"),
-    "months": ("m", "months", "month", "monate", "monat"),
+    "months": ("mo", "mon", "months", "month", "monate", "monat"),
     "weeks": ("w", "weeks", "week", "wochen", "woche"),
     "days": ("d", "days", "day", "tage", "tag"),
     "hours": ("h", "hours", "hour", "stunden", "stunde"),
-    "minutes": ("min", "minutes", "minute", "minuten"),
+    "minutes": ("m", "minutes", "minute", "minuten"),
 }
 """Keywords for specifying durations as well as their alternate forms.
 
