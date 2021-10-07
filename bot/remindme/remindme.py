@@ -413,8 +413,6 @@ class RemindMeCog(commands.Cog):
                         current_page += 1
                         current_embed = pages[current_page]
                         await message.edit(embed=current_embed)
-                        if not isinstance(ctx.channel, discord.DMChannel):
-                            await message.remove_reaction(reaction, user)
 
                     elif (
                         str(reaction.emoji) == constants.EMOJI_ARROW_BACKWARD
@@ -423,12 +421,6 @@ class RemindMeCog(commands.Cog):
                         current_page -= 1
                         current_embed = pages[current_page]
                         await message.edit(embed=current_embed)
-                        if not isinstance(ctx.channel, discord.DMChannel):
-                            await message.remove_reaction(reaction, user)
-
-                    else:
-                        if not isinstance(ctx.channel, discord.DMChannel):
-                            await message.remove_reaction(reaction, user)
 
                 except asyncio.TimeoutError:
                     await message.edit(
