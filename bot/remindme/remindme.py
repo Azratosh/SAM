@@ -359,9 +359,13 @@ class RemindMeCog(commands.Cog):
                     else f"#{page_index + page_job_index + 1} - {reminder_dt_str}"
                 )
 
+                sanitized_message = sanitize_str(job_id[2])
                 reminder_message = (
-                    f"{job_id[2] if len(job_id[2]) <= 50 else f'{job_id[2][:46]} ...'}"
+                    sanitized_message
+                    if len(sanitized_message) <= 25
+                    else f"{sanitized_message[:21]} ..."
                 )
+
                 field_value = (
                     reminder_message + f"\n\n**Von:** {author}"
                     if is_moderator and mod_arg
