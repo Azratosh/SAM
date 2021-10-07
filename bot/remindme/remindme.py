@@ -714,6 +714,10 @@ class RemindMeCog(commands.Cog):
 
         Returns:
             list[tuple]: A list of reminder job records.
+
+        Raises:
+            ValueError: If ``mod_arg`` receives an invalid argument.
+            TypeError: If ``mod_arg`` is of an unsupported type.
         """
         if is_mod and mod_arg is not None:
             if isinstance(mod_arg, discord.Member):
@@ -819,11 +823,14 @@ class RemindMeCog(commands.Cog):
     async def handle_no_jobs_found(ctx: commands.Context, *, is_mod: bool = False):
         """Handles cases in which no reminder jobs are found.
 
-        Simply posts a message and deletes the author's original one.
+        Notifies the user who issued the command and deletes the message of
+        their command. Moderators receive additional information.
 
         Args:
             ctx (commands.Context):
                 The command's invocation context.
+            is_mod (bool):
+                Whether the user that issued the command is a moderator or not.
         """
         description = "Es konnten keine Erinnerungen gefunden werden."
 
@@ -843,11 +850,14 @@ class RemindMeCog(commands.Cog):
         """Handles cases in which an invalid reminder job UUID or index was
         provided.
 
-        Simply posts an error message.
+        Notifies the user who issued the command and deletes the message of
+        their command. Moderators receive additional information.
 
         Args:
             ctx (commands.Context):
                 The command's invocation context.
+            is_mod (bool):
+                Whether the user that issued the command is a moderator or not.
         """
         description = "Ungültige ID."
 
@@ -874,11 +884,14 @@ class RemindMeCog(commands.Cog):
         """Handles cases in which no reminder job with the given index or UUID
         is found.
 
-        Simply posts an error message.
+        Notifies the user who issued the command and deletes the message of
+        their command. Moderators receive additional information.
 
         Args:
             ctx (commands.Context):
                 The command's invocation context.
+            is_mod (bool):
+                Whether the user that issued the command is a moderator or not.
         """
         description = "Es konnte keine Erinnerung mit dieser ID gefunden werden."
 
