@@ -395,7 +395,8 @@ class RemindMeCog(commands.Cog):
             current_page = 0
             current_embed = pages[current_page]
 
-            message = await ctx.send(embed=current_embed)
+            message = await ctx.author.send(embed=current_embed)
+            await ctx.message.delete()
             await message.add_reaction(constants.EMOJI_ARROW_BACKWARD)
             await message.add_reaction(constants.EMOJI_ARROW_FORWARD)
 
@@ -430,28 +431,16 @@ class RemindMeCog(commands.Cog):
                             await message.remove_reaction(reaction, user)
 
                 except asyncio.TimeoutError:
-                    if (
-                        is_moderator
-                        and mod_arg
-                        or isinstance(ctx.channel, discord.DMChannel)
-                    ):
-                        embed = current_embed.copy().set_footer(
+                    await message.edit(
+                        embed=current_embed.copy().set_footer(
                             text="Diese Nachricht ist nun inaktiv."
                         )
-                        await message.edit(embed=embed)
-
-                    else:
-                        await message.delete()
-
-                    await ctx.message.delete()
+                    )
                     break
 
         else:
-            message = await ctx.send(embed=pages[0])
-            if is_moderator and mod_arg or isinstance(ctx.channel, discord.DMChannel):
-                pass  # Leaving this empty for now in case behaviour will be changed
-            else:
-                await message.delete(delay=60)
+            await ctx.author.send(embed=pages[0])
+            await ctx.message.delete()
 
     @remindme.command(name="view")
     @command_log
