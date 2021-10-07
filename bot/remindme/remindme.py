@@ -600,6 +600,7 @@ class RemindMeCog(commands.Cog):
         title: str = f"Erinnerung {rm_const.REMINDER_EMOJI}",
         *,
         with_dt=False,
+        sanitize=False,
     ) -> discord.Embed:
         """Does what it says on the tin.
 
@@ -612,6 +613,8 @@ class RemindMeCog(commands.Cog):
                 A title for the reminder's embed.
             with_dt (bool):
                 Whether to add the reminder's time to the embed or not.
+            sanitize (bool):
+                Whether to sanitize the reminder's message or not.
 
         Returns:
             discord.Embed: The reminder's embed.
@@ -631,8 +634,9 @@ class RemindMeCog(commands.Cog):
             reminder_msg,
             reminder_dt=reminder_dt if with_dt else None,
             title=title,
-            message=message,
+            linked_message=message,
             author=author,
+            sanitize=sanitize,
         )
 
     @staticmethod
@@ -641,8 +645,9 @@ class RemindMeCog(commands.Cog):
         *,
         reminder_dt: Optional[datetime.datetime] = None,
         title: str = f"Erinnerung {rm_const.REMINDER_EMOJI}",
-        message: Optional[discord.Message] = None,
+        linked_message: Optional[discord.Message] = None,
         author: Optional[discord.User] = None,
+        sanitize: bool = False,
     ) -> discord.Embed:
         """Helper method that creates a reminder's embed.
 
@@ -653,14 +658,20 @@ class RemindMeCog(commands.Cog):
                 The reminder's message.
             title (str):
                 The title to set for the embed.
-            message (Optional[discord.Message]):
+            linked_message (Optional[discord.Message]):
                 Optional discord message that is linked in the reminder's message.
             author (Optional[discord.User]):
                 Optional user to display as author in the embed's footer.
+            sanitize (bool):
+                Whether to sanitize the reminder's message or not. Causes all
+                newlines to be replaced with spaces, saving space.
 
         Returns:
             discord.Embed: The reminder's embed.
         """
+        if sanitize:
+            reminder_msg = sanitize_str(reminder_msg)
+
         embed = discord.Embed(
             title=title,
             description=reminder_msg,
@@ -672,8 +683,8 @@ class RemindMeCog(commands.Cog):
                 name="Wann:",
                 value=f"{reminder_dt.strftime(rm_const.REMINDER_DT_MESSAGE_FORMAT)}",
             )
-        if message is not None and isinstance(message, discord.Message):
-            embed.description += f"\n\n[Originale Nachricht]({message.jump_url})"
+        if linked_message is not None and isinstance(linked_message, discord.Message):
+            embed.description += f"\n\n[Originale Nachricht]({linked_message.jump_url})"
 
         if author is not None and isinstance(author, discord.User):
             embed.add_field(
