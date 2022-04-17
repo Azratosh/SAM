@@ -154,6 +154,9 @@ class UtilityCog(commands.Cog):
         Args:
             payload (discord.RawReactionActionEvent): The payload for the triggered event.
         """
+        if not payload.member:  # ignores the event in DMs
+            return
+
         if not payload.member.bot and payload.emoji.name == constants.EMOJI_PIN:
             channel = self.bot.get_guild(int(constants.SERVER_ID)).get_channel(payload.channel_id)
             message = await channel.fetch_message(payload.message_id)
@@ -303,6 +306,7 @@ def generate_features_list(features: List[str]) -> str:
         "VERIFIED": "Verifiziert",
         "PARTNERED": "Discord-Partner",
         "MORE_EMOJI": "Mehr Emojis",
+        "ROLE_ICONS": "Rollen-Icons",
         "DISCOVERABLE": "In Server-Browser",
         "FEATURABLE": "Featurable",
         "COMMERCE": "Kommerziell",
@@ -316,6 +320,7 @@ def generate_features_list(features: List[str]) -> str:
         "PREVIEW_ENABLED": "Servervorschau",
         "THREADS_ENABLED": "Threads",
         "PRIVATE_THREADS": "Private Threads",
+        "NEW_THREAD_PERMISSIONS": "Neue Thread-Berechtigungen",
         "THREE_DAY_THREAD_ARCHIVE": "3-Tage-Archiv für Threads",
         "SEVEN_DAY_THREAD_ARCHIVE": "7-Tage-Archiv für Threads"
     }

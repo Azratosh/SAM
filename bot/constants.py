@@ -59,8 +59,8 @@ TIMEOUT_INFORMATION = 8
 
 # Discord Server Boosts
 DISCORD_BOOST_LVL1_CAP = 2
-DISCORD_BOOST_LVL2_CAP = 15
-DISCORD_BOOST_LVL3_CAP = 30
+DISCORD_BOOST_LVL2_CAP = 7
+DISCORD_BOOST_LVL3_CAP = 14
 
 # Embed Colors
 EMBED_COLOR_INFO = 0xFFDF00
@@ -123,7 +123,7 @@ EMOJI_CHANNEL_NAME_SEPARATOR = "\U0001F539"
 DISCORD_BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN") or "Undefined"
 
 # File Paths
-LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or '/logfile.log'
+LOG_FILE_PATH = os.getenv("LOG_FILE_PATH") or './logfile.log'
 DB_FILE_PATH = os.getenv("DB_FILE_PATH") or "./database.sqlite3"
 DB_INIT_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "persistence/resources/init_db.sql")
 

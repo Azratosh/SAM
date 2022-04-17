@@ -641,6 +641,10 @@ class ModerationCog(commands.Cog):
         joined_at = datetime.strftime(user.joined_at + time_difference, "%d.%m.%Y | %X")
         roles = " ".join([role.mention for role in reversed(user.roles[1:])]) if len(user.roles) > 1 else "\U0000274C" \
                                                                                                           " - Keine."
+        num_total_roles = len(user.roles)
+        if len(roles) > 1024:
+            roles = _trim_role_string(roles, num_total_roles)
+
         description = f"**Name am Server:** {user.display_name} | {user.mention}"
 
         if user.premium_since:
@@ -784,7 +788,7 @@ class ModerationCog(commands.Cog):
 
     @commands.group(name='modmail', invoke_without_command=True)
     @command_log
-    async def modmail(self, ctx: commands.Context):
+    async def modmail(self, ctx: commands.Context, *, message):
         """Command Handler for the `modmail` command.
 
         Allows users to write a message to all the moderators of the server. The message is going to be posted in a
@@ -793,12 +797,12 @@ class ModerationCog(commands.Cog):
 
         Args:
             ctx (discord.ext.commands.Context): The context in which the command was called.
+            message (str): The message which should be send to the moderators.
         """
         if ctx.channel.type not in [discord.ChannelType.private, discord.ChannelType.group] \
                 and not self._db_connector.is_botonly(ctx.channel.id):
             await ctx.message.delete()
 
-        msg_content = ctx.message.content[len(ctx.prefix + ctx.command.name):]
         msg_author_name = str(ctx.message.author)
         msg_timestamp = ctx.message.created_at
 
@@ -807,7 +811,7 @@ class ModerationCog(commands.Cog):
         files = [await a.to_file() for a in ctx.message.attachments if a != image]
 
         embed = discord.Embed(title="Status: Offen", color=const.EMBED_COLOR_MODMAIL_OPEN,
-                              timestamp=datetime.utcnow(), description=msg_content)
+                              timestamp=datetime.utcnow(), description=message)
         embed.set_author(name=str(ctx.author), icon_url=ctx.author.avatar_url)
         embed.set_footer(text="Erhalten am")
 
@@ -1410,6 +1414,25 @@ def _modmail_create_list_embed(status: ModmailStatus, modmail: List[tuple]) -> d
         raise ValueError("Nicht unterstützter Modmail-Status '{0}'.".format(status.name.title()))
 
     return discord.Embed.from_dict(dict_embed)
+
+def _trim_role_string(roles: str, num_total_roles: int):
+    """Cuts the role string for the role field to the embed limit of 1024 and appends the text 'und x weitere' where x is the number of cut off roles.
+
+     Args:
+        roles (str): String of all roles the user has by ids (eg. '<@1234...> <@456...> ...' .
+        num_total_roles (int): Number of roles the user has.
+
+    Returns:
+        str: The passed role string, trimmed down to less than 1024 characters.
+    """
+    roles_shortened = roles[:1009]
+    num_printed_roles = roles_shortened.count(">")  # Count number of non-cut roles that are still in the string (they end with '>')
+    remaining_roles = num_total_roles - num_printed_roles
+
+    cut_index = roles_shortened.rfind(" ")
+    roles_shortened = roles_shortened[:cut_index]
+    roles = f"{roles_shortened} und {remaining_roles} weitere."
+    return roles
 
 
 def setup(bot):
